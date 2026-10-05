@@ -69,8 +69,13 @@ def teacher_required(view_fn):
 
 
 # ---------------------------------------------------------------------------
-# Auth views
+# Home & Auth views
 # ---------------------------------------------------------------------------
+
+def home_view(request):
+    """Minimal landing page."""
+    return render(request, 'broadcast/home.html')
+
 
 @rate_limit(key_prefix='login_view', limit=5, period=60)
 def login_view(request):

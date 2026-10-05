@@ -91,6 +91,12 @@ header {
 }
 .brand:hover { text-decoration: none; opacity: 0.9; }
 .brand span { color: var(--accent); }
+.nav-logo {
+    height: 28px;
+    width: auto;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+}
 header nav { display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; }
 
 /* ===== Main content ===== */
