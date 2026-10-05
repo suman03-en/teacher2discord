@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found | Teacher2Discord{% endblock %}
+
+{% block extra_css %}
+<style>
+    .not-found-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        padding: 3rem 2rem;
+        background: radial-gradient(circle at center, rgba(102, 126, 234, 0.08) 0%, transparent 60%);
+        border-radius: 24px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        margin: 2rem auto;
+        max-width: 800px;
+    }
+    
+    .not-found-code {
+        font-size: 8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        line-height: 1;
+        text-shadow: 0 10px 30px rgba(118, 75, 162, 0.15);
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .not-found-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .not-found-text {
+        font-size: 1.125rem;
+        color: #718096;
+        max-width: 480px;
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+
+    .not-found-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.875rem 2.25rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+    }
+
+    .not-found-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Dark mode support if applicable */
+    @media (prefers-color-scheme: dark) {
+        .not-found-title {
+            color: #f7fafc;
+        }
+        .not-found-text {
+            color: #a0aec0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="not-found-container">
+    <h1 class="not-found-code">404</h1>
+    <h2 class="not-found-title">Oops! Page not found.</h2>
+    <p class="not-found-text">
+        We can't seem to find the page you're looking for. It might have been moved, deleted, or perhaps the URL is incorrect.
+    </p>
+    <a href="{% if request.session.teacher_id %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}" class="not-found-btn">
+        Return Home
+    </a>
+</div>
+{% endblock %}
