@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ link.channel_name }} — Teacher2Discord{% endblock %}
+
+{% block content %}
+
+{# Breadcrumbs #}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    {% for crumb in breadcrumbs %}
+        <span class="sep">›</span>
+        <a href="{% url 'folder_detail' crumb.pk %}">{{ crumb.name }}</a>
+    {% endfor %}
+    <span class="sep">›</span>
+    <strong class="current">{{ link.channel_name }}</strong>
+</div>
+
+<div class="page-header">
+    <h1>
+        {{ link.channel_name }}
+        {% if link.used %}
+            <span class="badge badge-success">Connected</span>
+        {% else %}
+            <span class="badge badge-warning">Waiting</span>
+        {% endif %}
+    </h1>
+    
+    <form method="post" class="inline-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_link">
+        <button type="button" class="btn btn-danger btn-sm"
+            onclick="confirmDelete(this, 'Delete this link?', 'This will remove the link and disconnect the associated channel. This cannot be undone.')">
+            ✕ Delete Link
+        </button>
+    </form>
+</div>
+
+<div class="card mt-1">
+    {% if not link.used %}
+    <div>
+        <label>Share this link to let the student connect their webhook:</label>
+        <div class="copy-row">
+            <div class="copy-box" id="magicLink">{{ request.scheme }}://{{ request.get_host }}{% url 'student_connect' link.token %}</div>
+            <button type="button" class="btn btn-outline" data-no-loader
+                onclick="navigator.clipboard.writeText(document.getElementById('magicLink').innerText); this.innerText='Copied!'; setTimeout(() => this.innerText='Copy', 2000);">
+                Copy
+            </button>
+        </div>
+    </div>
+    {% elif channel %}
+        {# Send message form #}
+        <form method="post" enctype="multipart/form-data" class="send-form">
+            {% csrf_token %}
+            {{ send_form.non_field_errors }}
+            {{ send_form.attachment.errors }}
+            <input type="hidden" name="action" value="send_message">
+            <textarea name="message" rows="3" placeholder="Type a message…"></textarea>
+            <div class="send-form-actions">
+                <input type="file" name="attachment">
+                <button type="submit" class="btn">Send Message</button>
+            </div>
+        </form>
+
+        {# Paginated Message History #}
+        {% if page_obj %}
+        <div class="message-history-header">
+            <h2>Message History</h2>
+            <span class="message-count">{{ total_messages }} message{{ total_messages|pluralize }}</span>
+        </div>
+        <div class="message-history" id="messageHistory">
+            <div id="messageList">
+                {% include 'broadcast/_message_items.html' %}
+            </div>
+            {% if page_obj.has_next %}
+            <div class="load-more-wrap" id="loadMoreWrap">
+                <button type="button" class="btn btn-ghost btn-full" id="loadMoreBtn"
+                    data-url="{% url 'link_messages' link.pk %}"
+                    data-next-page="{{ page_obj.next_page_number }}"
+                    data-total-pages="{{ page_obj.paginator.num_pages }}"
+                    onclick="loadMoreMessages(this)"
+                    data-no-loader>
+                    Load Older Messages
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}

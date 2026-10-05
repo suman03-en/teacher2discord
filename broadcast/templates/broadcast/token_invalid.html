@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Invalid or Expired Link — Teacher2Discord{% endblock %}
+
+{% block content %}
+<div class="page-center">
+    <span class="page-icon">⏰</span>
+    <h1>Link expired</h1>
+    <p>
+        This login link has expired or was already used.<br>
+        Request a new one below.
+    </p>
+    <a href="{% url 'login' %}" class="btn mt-3">
+        Request New Link
+    </a>
+</div>
+{% endblock %}

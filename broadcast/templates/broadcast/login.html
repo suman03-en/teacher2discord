@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Login — Teacher2Discord{% endblock %}
+
+{% block content %}
+<div class="page-center">
+    <h1>🔔 Teacher2Discord</h1>
+    <p class="mb-2">
+        Enter your email to receive a magic login link.
+    </p>
+
+    <div class="card card-left-align">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.email.errors }}
+            <label for="{{ form.email.id_for_label }}">Email address</label>
+            {{ form.email }}
+            <button type="submit" class="btn btn-full mt-0">Send Login Link</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

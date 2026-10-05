@@ -1,0 +1,13 @@
+{% for msg in page_obj %}
+<div class="message-item">
+    <div class="message-meta">
+        <strong>{{ link.channel_name }}</strong> &mdash; {{ msg.sent_at|date:"M j, Y, g:i a" }}
+    </div>
+    {% if msg.content %}
+    <div class="message-body">{{ msg.content }}</div>
+    {% endif %}
+    {% if msg.attachment_name %}
+    <div class="message-attachment">📎 {{ msg.attachment_name }}</div>
+    {% endif %}
+</div>
+{% endfor %}

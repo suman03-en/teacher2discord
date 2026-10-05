@@ -1,0 +1,63 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Teacher2Discord — Send announcements directly to your students' Discord channels.">
+    <title>{% block title %}Teacher2Discord{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'broadcast/css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <a href="{% if request.session.teacher_id %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}" class="brand">Teacher<span>2</span>Discord</a>
+        <nav>
+            {% if request.session.teacher_id %}
+                <a href="{% url 'dashboard' %}">Dashboard</a>
+                <form method="post" action="{% url 'logout' %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+                </form>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        {% if messages %}
+            <div id="message-container">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                        <span>{{ message }}</span>
+                        <button class="close-btn" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>Teacher2Discord &mdash; Powered by Django</footer>
+
+    <!-- Delete confirmation modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon">⚠️</div>
+            <h3 id="deleteModalTitle">Delete this item?</h3>
+            <p id="deleteModalDesc">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" id="deleteModalConfirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'broadcast/js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

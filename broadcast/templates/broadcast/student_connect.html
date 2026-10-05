@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Connect to {{ student_link.channel_name }} — Teacher2Discord{% endblock %}
+
+{% block content %}
+<div class="page-center">
+    <h1>🔗 Connect Your Channel</h1>
+    <p class="mb-2">
+        You have been invited to connect your Discord channel
+        <strong>{{ student_link.channel_name }}</strong>.
+    </p>
+
+    <div class="card card-left-align">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.webhook_url.errors }}
+            <label>{{ form.webhook_url.label }}</label>
+            {{ form.webhook_url }}
+
+            <p class="hint-text">
+                To get your Webhook URL: Discord channel settings →
+                Integrations → Webhooks → New Webhook → Copy URL.
+            </p>
+
+            <button type="submit" class="btn btn-full">Connect Channel</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ folder.name }} — Teacher2Discord{% endblock %}
+
+{% block content %}
+
+{# Breadcrumbs #}
+<div class="breadcrumb">
+    <a href="{% url 'dashboard' %}">Dashboard</a>
+    {% for crumb in breadcrumbs %}
+        <span class="sep">›</span>
+        {% if crumb.pk == folder.pk %}
+            <strong class="current">{{ crumb.name }}</strong>
+        {% else %}
+            <a href="{% url 'folder_detail' crumb.pk %}">{{ crumb.name }}</a>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<h1>📁 {{ folder.name }}</h1>
+
+{# ── Management Forms ── #}
+<div class="grid-2 mb-2">
+    <div class="card mb-0">
+        <h3>New Subfolder</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_folder">
+            {{ folder_form.name.errors }}
+            {{ folder_form.name }}
+            <button type="submit" class="btn btn-sm">Create</button>
+        </form>
+    </div>
+
+    <div class="card mb-0">
+        <h3>New Student Link</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_link">
+            {{ link_form.channel_name.errors }}
+            <label>{{ link_form.channel_name.label }}</label>
+            {{ link_form.channel_name }}
+            <button type="submit" class="btn btn-sm">Create Link</button>
+        </form>
+    </div>
+</div>
+
+{# ── Channels List ── #}
+<div class="section">
+    <h2>Channels & Links</h2>
+    {% for link in student_links %}
+        <a href="{% url 'link_detail' link.pk link.slug %}" class="channel-card">
+            <span class="label">
+                <span class="channel-name">{{ link.channel_name }}</span>
+                {% if link.used %}
+                    <span class="badge badge-success">Connected</span>
+                {% else %}
+                    <span class="badge badge-warning">Waiting</span>
+                {% endif %}
+            </span>
+            <span class="channel-arrow">Manage ›</span>
+        </a>
+    {% empty %}
+        <div class="empty-state empty-state-compact">
+            <div class="empty-icon">🔗</div>
+            <p>No channels or links yet.<br>Create a student link above to get started.</p>
+        </div>
+    {% endfor %}
+</div>
+
+{# ── Subfolders List ── #}
+{% if subfolders %}
+<div class="section">
+    <h2>Subfolders</h2>
+    {% for sub in subfolders %}
+    <div class="card subfolder-card">
+        <div class="item-row subfolder-card">
+            <span class="label">
+                📁 <a href="{% url 'folder_detail' sub.pk %}">{{ sub.name }}</a>
+            </span>
+            <form method="post" class="inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_folder">
+                <input type="hidden" name="target_id" value="{{ sub.pk }}">
+                <button type="button" class="btn btn-danger btn-sm"
+                    onclick="confirmDelete(this, 'Delete subfolder?', 'This will permanently delete \'{{ sub.name }}\' and all its contents.')">
+                    ✕
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

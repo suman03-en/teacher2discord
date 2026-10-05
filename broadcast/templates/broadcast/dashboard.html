@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Teacher2Discord{% endblock %}
+
+{% block content %}
+<h1>📁 My Folders</h1>
+
+{% for folder in folders %}
+<div class="card">
+    <div class="item-row">
+        <span class="label">
+            📁 <a href="{% url 'folder_detail' folder.pk %}">{{ folder.name }}</a>
+            <span class="badge badge-default">{{ folder.children.count }} sub</span>
+        </span>
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_folder">
+            <input type="hidden" name="target_id" value="{{ folder.pk }}">
+            <button type="button" class="btn btn-danger btn-sm"
+                onclick="confirmDelete(this, 'Delete folder?', 'This will permanently delete \'{{ folder.name }}\' and all its contents.')">
+                ✕
+            </button>
+        </form>
+    </div>
+</div>
+{% empty %}
+<div class="empty-state">
+    <div class="empty-icon">📂</div>
+    <h3>No folders yet</h3>
+    <p>Create your first folder below to start organizing<br>your classes and Discord channels.</p>
+</div>
+{% endfor %}
+
+<div class="section">
+    <div class="card">
+        <h3>New Root Folder</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.name.errors }}
+            <label for="{{ form.name.id_for_label }}">Folder Name</label>
+            {{ form.name }}
+            <button type="submit" class="btn">Create Folder</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

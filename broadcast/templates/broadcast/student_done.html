@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Connected! — Teacher2Discord{% endblock %}
+
+{% block content %}
+<div class="page-center">
+    <span class="page-icon">✅</span>
+    <h1>You're connected!</h1>
+    <p>
+        Your Discord channel has been linked to
+        <strong>{{ student_link.channel_name }}</strong>.<br><br>
+        Your teacher can now send announcements directly to your channel.
+    </p>
+</div>
+{% endblock %}

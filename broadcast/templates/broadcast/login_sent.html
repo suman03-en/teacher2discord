@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Check Your Email — Teacher2Discord{% endblock %}
+
+{% block content %}
+<div class="page-center">
+    <span class="page-icon">📬</span>
+    <h1>Check your email</h1>
+    <p>
+        A login link was sent to <strong>{{ email }}</strong>.<br>
+        It expires in 15 minutes.
+    </p>
+    <p class="mt-3">
+        <a href="{% url 'login' %}">&larr; Back to login</a>
+    </p>
+
+    {% if debug %}
+    <div class="alert alert-info mt-3" style="text-align: left;">
+        <span><strong>Dev note:</strong> The link is printed in your terminal (console email backend).</span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
