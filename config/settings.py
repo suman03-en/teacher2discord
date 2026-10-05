@@ -145,6 +145,7 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get('BREVO_SMTP_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('BREVO_SMTP_PASSWORD')
 EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 10  # seconds — prevents Gunicorn worker timeouts on slow SMTP
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL', 'noreply@teacher2discord.com'
 )
