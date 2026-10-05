@@ -1,9 +1,13 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Login — Teacher2Discord{% endblock %}
 
 {% block content %}
 <div class="page-center">
-    <h1>🔔 Teacher2Discord</h1>
+    <h1>
+        <img src="{% static 'broadcast/images/favicon.png' %}" alt="Logo" style="height: 32px; width: auto; vertical-align: middle; margin-right: 0.2rem; margin-top: -6px;">
+        Teacher2Discord
+    </h1>
     <p class="mb-2">
         Enter your email to receive a magic login link.
     </p>
