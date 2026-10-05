@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     'broadcast',
 ]
 
@@ -138,14 +139,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email configuration using Sendinblue SMTP
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = os.environ.get('BREVO_SMTP_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('BREVO_SMTP_PASSWORD')
-EMAIL_USE_TLS = True
-EMAIL_TIMEOUT = 10  # seconds — prevents Gunicorn worker timeouts on slow SMTP
+# Email configuration using Brevo API (via django-anymail)
+EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+ANYMAIL = {
+    'BREVO_API_KEY': os.environ.get('BREVO_API_KEY', ''),
+}
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL', 'noreply@teacher2discord.com'
 )
@@ -175,6 +173,7 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Production-only HTTPS settings (enabled when DEBUG is off)
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True

@@ -6,8 +6,7 @@ remain thin request/response handlers.
 """
 
 import logging
-import smtplib
-import socket
+from anymail.exceptions import AnymailError, AnymailAPIError
 from datetime import timedelta
 
 from django.conf import settings
@@ -70,15 +69,12 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
             fail_silently=False,
         )
         logger.info("Magic link sent via SMTP to %s", email)
-    except smtplib.SMTPAuthenticationError as exc:
-        logger.error("SMTP auth failed for %s: %s", email, exc)
-        raise EmailAuthenticationError(str(exc)) from exc
-    except (socket.gaierror, socket.timeout, ConnectionError, smtplib.SMTPConnectError) as exc:
-        logger.error("SMTP connection failed for %s: %s", email, exc)
-        raise EmailConnectionError(str(exc)) from exc
-    except smtplib.SMTPException as exc:
-        logger.error("SMTP delivery failed for %s: %s", email, exc)
+    except AnymailAPIError as exc:
+        logger.error("Brevo API error for %s: %s", email, exc)
         raise EmailDeliveryError(str(exc)) from exc
+    except AnymailError as exc:
+        logger.error("Anymail error for %s: %s", email, exc)
+        raise EmailConnectionError(str(exc)) from exc
     except ValueError as exc:
         logger.error("Invalid email configuration: %s", exc)
         raise EmailDeliveryError(str(exc)) from exc
