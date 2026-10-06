@@ -1,0 +1,88 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  :root,
+  html[data-theme="light"],
+  html[data-theme="dark"] {
+    /* Main colors */
+    --primary: #5865F2;
+    --secondary: #131825;
+    --accent: #57F287;
+    --primary-fg: #fff;
+
+    /* Body */
+    --body-fg: #e8ecf4;
+    --body-bg: #0b0f19;
+    --body-quiet-color: #8b93a8;
+    --body-loud-color: #fff;
+
+    /* Header */
+    --header-color: #e8ecf4;
+    --header-branding-color: #ffffff;
+    --header-bg: #131825;
+    --header-link-color: #8b93a8;
+
+    /* Breadcrumbs */
+    --breadcrumbs-fg: #8b93a8;
+    --breadcrumbs-link-fg: #e8ecf4;
+    --breadcrumbs-bg: #1a2035;
+
+    /* Links */
+    --link-fg: #5865F2;
+    --link-hover-color: #7983f5;
+    --link-selected-fg: #5865F2;
+
+    /* Backgrounds */
+    --darkened-bg: #131825;
+    --selected-bg: #1a2035;
+    --selected-row: rgba(88, 101, 242, 0.15);
+
+    /* Buttons */
+    --button-fg: #fff;
+    --button-bg: #212942;
+    --button-hover-bg: #252d42;
+    --default-button-bg: #5865F2;
+    --default-button-hover-bg: #4752C4;
+    --close-button-bg: #ED4245;
+    --close-button-hover-bg: #d63031;
+
+    /* Object Tools */
+    --object-tools-fg: #fff;
+    --object-tools-bg: #1a2035;
+    --object-tools-hover-bg: #212942;
+
+    /* Forms */
+    --border-color: #252d42;
+    --error-fg: #ED4245;
+    --message-success-bg: rgba(87, 242, 135, 0.1);
+    --message-warning-bg: rgba(254, 231, 92, 0.1);
+    --message-error-bg: rgba(237, 66, 69, 0.1);
+  }
+
+  /* Force dark mode specific overrides for standard elements */
+  #header {
+    border-bottom: 1px solid var(--border-color);
+  }
+  .module h2, .module caption, .inline-group h2 {
+    background: var(--secondary);
+    color: var(--primary-fg);
+  }
+  
+  /* Make the branding text stand out nicely */
+  #site-name a {
+    font-weight: 700;
+  }
+</style>
+{% endblock %}
+
+{% block branding %}
+{% load static %}
+<div id="site-name">
+    <a href="{% url 'admin:index' %}" style="display: flex; align-items: center; color: var(--header-branding-color); text-decoration: none;">
+        <img src="{% static 'broadcast/images/favicon.png' %}" alt="Logo" style="height: 28px; width: auto; margin-right: 0.5rem; border-radius: 4px;">
+        Teacher<span style="color: var(--primary);">2</span>Discord
+    </a>
+</div>
+{% endblock %}
