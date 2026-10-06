@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Login to Teacher2Discord</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #0b0f19;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header img {
+            max-height: 50px;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .content h1 {
+            font-size: 24px;
+            color: #1a2035;
+            margin-bottom: 20px;
+        }
+
+        .content p {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #505872;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #5865F2;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #8b93a8;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .link-fallback {
+            font-size: 12px;
+            color: #8b93a8;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Teacher2Discord Logo">
+        </div>
+        <div class="content">
+            <h1>Welcome Back!</h1>
+            <p>You requested a magic login link for Teacher2Discord. Click the button below to sign in instantly.</p>
+            <a href="{{ verify_url }}" class="btn">Log In to Your Dashboard</a>
+            <p class="link-fallback">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="{{ verify_url }}">{{ verify_url }}</a>
+            </p>
+            <p style="font-size: 14px; margin-top: 40px;">This link will expire in 15 minutes. If you didn't request
+                this email, you can safely ignore it.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Teacher2Discord. All rights reserved.
+        </div>
+    </div>
+</body>
+
+</html>

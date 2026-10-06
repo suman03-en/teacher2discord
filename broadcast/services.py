@@ -12,6 +12,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .exceptions import (
@@ -48,6 +49,7 @@ def create_login_token(teacher: Teacher) -> LoginToken:
     return LoginToken.objects.create(teacher=teacher, expires_at=expiry)
 
 
+
 def send_magic_link_email(email: str, verify_url: str) -> None:
     """Send the magic-link email via Django's SMTP backend.
 
@@ -56,14 +58,28 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
         EmailConnectionError:     Cannot reach the SMTP server.
         EmailDeliveryError:       Server accepted connection but refused the message.
     """
+    base_url = verify_url.split('/auth/')[0]
+    logo_url = f"{base_url}/static/broadcast/images/main_logo.png"
+
+    context = {
+        'verify_url': verify_url,
+        'logo_url': logo_url,
+        'base_url': base_url,
+    }
+
+    text_content = (
+        f"Hi,\n\nClick the link below to log in (expires in 15 minutes):\n\n"
+        f"{verify_url}\n\n"
+        f"If you did not request this, ignore this email."
+    )
+    
+    html_content = render_to_string('broadcast/email/magic_link.html', context)
+
     try:
         send_mail(
             subject='Your Teacher2Discord Login Link',
-            message=(
-                f'Hi,\n\nClick the link below to log in (expires in 15 minutes):\n\n'
-                f'{verify_url}\n\n'
-                f'If you did not request this, ignore this email.'
-            ),
+            message=text_content,
+            html_message=html_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,

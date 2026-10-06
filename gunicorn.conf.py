@@ -1,22 +1,19 @@
-"""
-Gunicorn configuration for production deployment.
-"""
+"""Gunicorn configuration for production deployment."""
 
 import multiprocessing
 
-# Bind to the PORT env var (Render sets this automatically)
 bind = "0.0.0.0:10000"
 
-# Workers: 2-4x CPU cores is recommended, but Render free tier has limited RAM
+# Use threaded workers so blocking HTTP calls (Discord webhooks) don't
+# monopolise an entire worker process.
+worker_class = "gthread"
 workers = multiprocessing.cpu_count() * 2 + 1
+threads = 4
 
-# Timeout: increased from default 30s to handle slow SMTP connections
+# Increased from default 30s to handle slow external API calls
 timeout = 120
-
-# Graceful timeout for workers to finish serving requests
 graceful_timeout = 30
 
-# Access log to stdout
 accesslog = "-"
 errorlog = "-"
 loglevel = "info"

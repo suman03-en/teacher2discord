@@ -1,6 +1,8 @@
 import uuid
+
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 
 class Teacher(models.Model):
@@ -53,7 +55,6 @@ class StudentLink(models.Model):
 
     @property
     def slug(self):
-        from django.utils.text import slugify
         return slugify(self.channel_name) or "link"
 
     def __str__(self):

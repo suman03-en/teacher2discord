@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from broadcast.models import LoginToken
@@ -15,14 +16,13 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        expired_or_used = LoginToken.objects.filter(
-            expires_at__lt=timezone.now()
-        ) | LoginToken.objects.filter(used=True)
-
-        count = expired_or_used.count()
+        stale = LoginToken.objects.filter(
+            Q(expires_at__lt=timezone.now()) | Q(used=True)
+        )
+        count = stale.count()
 
         if options['dry_run']:
             self.stdout.write(f"Would delete {count} expired/used token(s).")
         else:
-            expired_or_used.delete()
+            stale.delete()
             self.stdout.write(self.style.SUCCESS(f"Deleted {count} expired/used token(s)."))

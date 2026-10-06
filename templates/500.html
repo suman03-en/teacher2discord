@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Server Error | Teacher2Discord{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        padding: 3rem 2rem;
+        background: radial-gradient(circle at center, rgba(237, 66, 69, 0.06) 0%, transparent 60%);
+        border-radius: 24px;
+        margin: 2rem auto;
+        max-width: 800px;
+    }
+
+    .error-code {
+        font-size: 8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ED4245 0%, #a83234 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        line-height: 1;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .error-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #e8ecf4;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .error-text {
+        font-size: 1.125rem;
+        color: #8b93a8;
+        max-width: 480px;
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+
+    .error-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.875rem 2.25rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: white;
+        background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(88, 101, 242, 0.25);
+    }
+
+    .error-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(88, 101, 242, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-code">500</h1>
+    <h2 class="error-title">Something went wrong</h2>
+    <p class="error-text">
+        We hit an unexpected error on our end. Our team has been notified.
+        Please try again in a few moments.
+    </p>
+    <a href="{% url 'home' %}" class="error-btn">
+        Return Home
+    </a>
+</div>
+{% endblock %}
