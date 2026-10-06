@@ -9,7 +9,7 @@
     <div class="item-row">
         <span class="label">
             📁 <a href="{% url 'folder_detail' folder.pk %}">{{ folder.name }}</a>
-            <span class="badge badge-default">{{ folder.children.count }} sub</span>
+            <span class="badge badge-default">{{ folder.children_count }} sub</span>
         </span>
         <form method="post" class="inline-form">
             {% csrf_token %}

@@ -41,12 +41,12 @@ def get_or_create_teacher(email: str) -> Teacher:
     return teacher
 
 
-def create_login_token(teacher: Teacher) -> LoginToken:
-    """Create a fresh magic-link token for *teacher*."""
+def create_login_token(email: str) -> LoginToken:
+    """Create a fresh magic-link token for *email*."""
     expiry = timezone.now() + timedelta(
         minutes=getattr(settings, 'LOGIN_TOKEN_EXPIRY_MINUTES', 15),
     )
-    return LoginToken.objects.create(teacher=teacher, expires_at=expiry)
+    return LoginToken.objects.create(email=email.lower(), expires_at=expiry)
 
 
 

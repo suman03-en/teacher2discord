@@ -14,7 +14,7 @@ class Teacher(models.Model):
 
 
 class LoginToken(models.Model):
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='tokens')
+    email = models.EmailField()
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
@@ -24,7 +24,7 @@ class LoginToken(models.Model):
         return not self.used and timezone.now() < self.expires_at
 
     def __str__(self):
-        return f"Token for {self.teacher.email}"
+        return f"Token for {self.email}"
 
 
 class Folder(models.Model):

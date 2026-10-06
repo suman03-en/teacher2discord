@@ -207,3 +207,12 @@ ALLOWED_ATTACHMENT_EXTENSIONS = [
 
 # Maximum attachment file size (bytes) — 10 MB
 MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
+
+# Django Debug Toolbar
+if DEBUG:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.insert(2, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+    INTERNAL_IPS = [
+        '127.0.0.1',
+        'localhost',
+    ]

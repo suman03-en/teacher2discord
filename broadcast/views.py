@@ -9,6 +9,7 @@ import functools
 import logging
 
 from django.contrib import messages
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -86,8 +87,7 @@ def login_view(request):
     form = EmailLoginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         email = form.cleaned_data['email'].lower()
-        teacher = get_or_create_teacher(email)
-        token = create_login_token(teacher)
+        token = create_login_token(email)
         verify_url = request.build_absolute_uri(f'/auth/verify/{token.token}/')
 
         try:
@@ -112,7 +112,8 @@ def verify_token(request, token):
     except TokenError:
         return render(request, 'broadcast/token_invalid.html')
 
-    set_teacher_session(request, login_token.teacher)
+    teacher = get_or_create_teacher(login_token.email)
+    set_teacher_session(request, teacher)
     messages.success(request, "Successfully logged in!")
     return redirect('dashboard')
 
@@ -133,7 +134,7 @@ def logout_view(request):
 @rate_limit(key_prefix='dashboard', limit=30, period=60, post_only=True)
 def dashboard(request):
     """Root-level folders for the logged-in teacher."""
-    root_folders = request.teacher.folders.filter(parent=None)
+    root_folders = request.teacher.folders.filter(parent=None).annotate(children_count=Count('children'))
     form = FolderForm(request.POST or None)
 
     if request.method == 'POST':

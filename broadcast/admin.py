@@ -12,9 +12,9 @@ class TeacherAdmin(admin.ModelAdmin):
 
 @admin.register(LoginToken)
 class LoginTokenAdmin(admin.ModelAdmin):
-    list_display = ('teacher', 'token', 'created_at', 'expires_at', 'used')
+    list_display = ('email', 'token', 'created_at', 'expires_at', 'used')
     list_filter = ('used',)
-    search_fields = ('teacher__email',)
+    search_fields = ('email',)
     readonly_fields = ('token', 'created_at')
 
 
