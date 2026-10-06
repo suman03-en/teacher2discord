@@ -166,7 +166,7 @@ def send_discord_message(channel: Channel, message_text: str, uploaded_file=None
 
     if uploaded_file:
         discord_files = {
-            'files[0]': (uploaded_file.name, uploaded_file.read(), uploaded_file.content_type),
+            'files[0]': (uploaded_file.name, uploaded_file, uploaded_file.content_type),
         }
 
     with Webhook.from_url(channel.webhook_url) as wh:
