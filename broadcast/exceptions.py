@@ -17,45 +17,84 @@ class BroadcastError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# Email / SMTP errors
+# Email (Brevo API) errors
 # ---------------------------------------------------------------------------
 
 class EmailError(BroadcastError):
     """Base class for all email-related failures."""
 
 
-class EmailAuthenticationError(EmailError):
-    """SMTP credentials were rejected (wrong user/password or unauthorized IP)."""
+class EmailConfigurationError(EmailError):
+    """Email backend is misconfigured (e.g. ``BREVO_API_KEY`` missing)."""
 
     def __init__(self, message: str = ""):
         super().__init__(
-            message or "SMTP authentication failed.",
+            message or "Email backend is not configured correctly.",
             user_message=(
-                "Unable to send email — the mail server rejected our credentials. "
+                "Email service is not configured. "
                 "Please contact the administrator."
             ),
         )
 
 
-class EmailConnectionError(EmailError):
-    """Could not connect to the SMTP server at all."""
+class EmailAuthenticationError(EmailError):
+    """Brevo rejected the API key (HTTP 401/403 — invalid, revoked or IP not authorised)."""
 
     def __init__(self, message: str = ""):
         super().__init__(
-            message or "Could not connect to the SMTP server.",
+            message or "Brevo API key was rejected.",
             user_message=(
-                "Unable to send email — could not reach the mail server. "
+                "Unable to send email — the email service rejected our credentials. "
+                "Please contact the administrator."
+            ),
+        )
+
+
+class EmailRateLimitError(EmailError):
+    """Brevo rate limit or sending quota exceeded (HTTP 429)."""
+
+    def __init__(self, message: str = ""):
+        super().__init__(
+            message or "Brevo rate limit exceeded.",
+            user_message=(
+                "Too many emails are being sent right now. "
+                "Please wait a moment and try again."
+            ),
+        )
+
+
+class EmailRecipientError(EmailError):
+    """The recipient address is invalid or was refused by Brevo."""
+
+    def __init__(self, message: str = ""):
+        super().__init__(
+            message or "Recipient address was rejected.",
+            user_message=(
+                "We couldn't send an email to that address. "
+                "Please check it and try again."
+            ),
+        )
+
+
+class EmailConnectionError(EmailError):
+    """Could not reach the Brevo API (network error, timeout, DNS failure)."""
+
+    def __init__(self, message: str = ""):
+        super().__init__(
+            message or "Could not connect to the Brevo API.",
+            user_message=(
+                "Unable to send email — could not reach the email service. "
                 "Please try again later."
             ),
         )
 
 
 class EmailDeliveryError(EmailError):
-    """Connected successfully but the message was not accepted."""
+    """Brevo responded with an error not covered by a more specific class."""
 
     def __init__(self, message: str = ""):
         super().__init__(
-            message or "The mail server refused the message.",
+            message or "Brevo API refused the message.",
             user_message="Failed to send the login email. Please try again later.",
         )
 

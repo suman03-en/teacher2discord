@@ -5,6 +5,16 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 
+class RateLimit(models.Model):
+    key = models.CharField(max_length=255, unique=True, db_index=True)
+    count = models.IntegerField(default=0)
+    reset_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.key} ({self.count})"
+
+
+
 class Teacher(models.Model):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,6 +87,9 @@ class SentMessage(models.Model):
 
     class Meta:
         ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['channel', '-sent_at']),
+        ]
 
     def __str__(self):
         return f"To {self.channel}: {self.content[:20]}"

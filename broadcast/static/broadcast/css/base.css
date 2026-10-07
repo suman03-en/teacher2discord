@@ -309,6 +309,11 @@ input[type="file"]::file-selector-button:hover {
     border-color: var(--danger-border);
     color: var(--danger);
 }
+.alert-warning {
+    background: rgba(250, 176, 5, 0.1);
+    border-color: rgba(250, 176, 5, 0.35);
+    color: #f5c451;
+}
 .alert .close-btn {
     background: transparent;
     border: none;
