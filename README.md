@@ -1,77 +1,118 @@
-# Teacher2Discord
+# 🎓 Teacher2Discord
 
-Teacher2Discord is a Django application that allows teachers to broadcast messages and files directly to their students' Discord servers via webhooks.
+> **A beautifully simple Django application empowering educators to broadcast announcements, assignments, and files directly to their students' personal Discord servers.**
 
-## Features
+![Django](https://img.shields.io/badge/Django-6.1-092E20?logo=django)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
 
-- **Passwordless Login**: Teachers authenticate using magic links sent via email (powered by Brevo SMTP).
-- **Folder Management**: Organize classes and subjects using nested folders.
-- **Student Links**: Generate unique, one-time-use links for students to connect their Discord webhooks.
-- **Broadcast Announcements**: Send text messages and file attachments to connected student Discord webhooks from a unified dashboard.
-- **PostgreSQL Database**: Configured for robust data storage using `dj-database-url`.
+---
 
-## Tech Stack
+## 📖 Overview
 
-- **Framework**: Django 6.1
-- **Database**: PostgreSQL (or SQLite for local development)
-- **Package Manager**: uv
-- **Email Service**: Brevo SMTP (for sending magic links)
-- **Integrations**: Discord Webhooks
+Communicating with students across multiple platforms can be fragmented. **Teacher2Discord** bridges the gap between the classroom and the tools students already use. 
 
-## Prerequisites
+Teachers can organize their classes into nested folders, generate one-time-use secure invite links, and let students connect their own Discord Webhooks. From there, a single click in the teacher dashboard broadcasts rich messages and file attachments directly to the students' Discord channels.
 
-- Python 3.14+ (or compatible version)
-- [uv](https://github.com/astral-sh/uv) package manager
-- PostgreSQL (optional, defaults to SQLite locally)
-- A Brevo (Sendinblue) account or another SMTP provider for sending login emails.
+## ✨ Key Features
 
-## Setup Instructions
+- **🛡️ Passwordless Magic Link Auth**: No passwords to remember or lose. Teachers authenticate instantly via secure, time-boxed email magic links powered by the Brevo API.
+- **📂 Hierarchical Folder Management**: Keep classrooms organized. Nest subjects, periods, and study groups infinitely.
+- **🔗 Secure One-Time Webhook Links**: Generate unique `tokenized` URLs to share with students. Once a student inputs their webhook, the link safely expires to prevent abuse or duplicates.
+- **🚀 High-Performance Rate Limiting**: Built with a custom ORM-backed rate limiting engine providing strict protection against brute force and DDoS attacks without sacrificing database speeds.
+- **📨 Rich Media Broadcasts**: Send formatted text announcements and file attachments directly to Discord channels seamlessly.
+- **☁️ Cloud-Ready Architecture**: Designed for platforms like **Render** and **Heroku**, featuring out-of-the-box Gunicorn support, Whitenoise static file serving, and native reverse-proxy IP spoofing protection.
 
-1. **Clone the repository**:
+---
+
+## 🛠️ Tech Stack
+
+- **Backend Framework**: Django 6.1
+- **Database**: PostgreSQL (Production) / SQLite (Local)
+- **Dependency Management**: `uv`
+- **Email Delivery**: Brevo API (via `django-anymail`)
+- **Server**: Gunicorn & Whitenoise (Static Files)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.10+
+- [uv](https://github.com/astral-sh/uv) (Extremely fast Python package manager)
+- Brevo Account (for transactional emails)
+- PostgreSQL (optional for local dev)
+
+### 1. Local Setup
+
+Clone the repository and set up your environment:
+
+```bash
+git clone https://github.com/yourusername/teacher2discord.git
+cd teacher2discord
+
+# Create and activate virtual environment using uv
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+uv pip install -r requirements.txt
+```
+
+### 2. Environment Configuration
+
+Copy the example configuration file:
+
+```bash
+cp .env.example .env
+```
+
+Update your `.env` file with your specific credentials:
+- `SECRET_KEY`: A random cryptographic string.
+- `DATABASE_URL`: Your PostgreSQL connection string.
+- `BREVO_API_KEY`: Your API key for sending magic links.
+- `TRUSTED_PROXY_COUNT`: Set to `1` if hosting on Render/Heroku, `2` for Cloudflare, or `0` for local testing.
+
+### 3. Database Initialization
+
+Run the initial migrations to construct the database schema:
+
+```bash
+python manage.py migrate
+```
+
+*(Note: There is no need to create a superuser as the application relies entirely on magic link authentication).*
+
+### 4. Run the Server
+
+Start the development server:
+
+```bash
+python manage.py runserver
+```
+
+Navigate to `http://127.0.0.1:8000/` and enter your email to get started!
+
+---
+
+## ☁️ Deployment (Render)
+
+Teacher2Discord is optimized for immediate deployment on Render.com.
+
+1. Create a new **Web Service** on Render and connect your repository.
+2. Set the **Build Command**:
    ```bash
-   git clone <repository_url>
-   cd teacher2discord
+   ./build.sh
    ```
-
-2. **Set up the virtual environment and install dependencies**:
+3. Set the **Start Command**:
    ```bash
-   uv venv
-   # Activate the virtual environment
-   # On Windows:
-   .venv\Scripts\activate
-   # On macOS/Linux:
-   source .venv/bin/activate
-   
-   uv pip install -r requirements.txt
+   gunicorn config.wsgi:application --workers 2 --threads 4
    ```
+4. Add your Environment Variables in the Render dashboard (copy from `.env`). Ensure `TRUSTED_PROXY_COUNT=1` is set to securely handle client IPs behind Render's load balancer.
 
-3. **Environment Variables**:
-   Copy the example environment file and configure it with your credentials:
-   ```bash
-   cp .env.example .env
-   ```
-   Update `.env` with your secret key, database URL, and SMTP settings.
+---
 
-4. **Run Migrations**:
-   ```bash
-   python manage.py migrate
-   ```
+## 🤝 Contributing
 
-5. **Run the Development Server**:
-   ```bash
-   python manage.py runserver
-   ```
-   Access the application at `http://127.0.0.1:8000/`.
-
-## Usage
-
-1. Go to the login page and enter your teacher email.
-2. Check your email for the magic login link and click it to authenticate.
-3. Create folders for your classes or subjects.
-4. Inside a folder, generate a "Student Link" and share it with a student.
-5. The student clicks the link and provides their Discord channel's webhook URL.
-6. You can now broadcast messages to that channel directly from the teacher dashboard.
-
-## License
-
-MIT License
+Contributions, issues, and feature requests are welcome! 
+Feel free to check the issues page if you want to contribute.
