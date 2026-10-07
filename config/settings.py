@@ -131,6 +131,40 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # Magic link expiry (minutes)
 LOGIN_TOKEN_EXPIRY_MINUTES = 15
 
+# ---------------------------------------------------------------------------
+# Cache — shared across all gunicorn workers so rate-limit counters are
+# global. (The default LocMemCache is per-process, which would multiply
+# every limit by the number of workers.) Create the table once with:
+#   python manage.py createcachetable
+# ---------------------------------------------------------------------------
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Magic-link rate limiting (protects inboxes AND the Brevo plan quota)
+# Enforced by ``broadcast.decorators.magic_link_rate_limit``.
+# ---------------------------------------------------------------------------
+# Per email address
+MAGIC_LINK_COOLDOWN_SECONDS = 60          # min gap between two links
+MAGIC_LINK_PER_EMAIL_MAX_PER_HOUR = 3
+MAGIC_LINK_PER_EMAIL_MAX_PER_DAY = 10
+# Per client IP
+MAGIC_LINK_PER_IP_MAX_PER_HOUR = 5
+MAGIC_LINK_PER_IP_MAX_PER_DAY = 20
+# Global hard cap across ALL users (rolling 24h). Keep this BELOW your
+# Brevo daily allowance (free plan = 300/day) so an attack can never
+# exhaust the plan.
+MAGIC_LINK_GLOBAL_MAX_PER_DAY = int(os.environ.get('MAGIC_LINK_GLOBAL_MAX_PER_DAY', 250))
+
+# Number of reverse proxies in front of Django that append to
+# X-Forwarded-For (Render/Heroku = 1, none/local = 0). Used to read the
+# real client IP without trusting spoofed headers.
+TRUSTED_PROXY_COUNT = int(os.environ.get('TRUSTED_PROXY_COUNT', 1))
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------------------------------------------------------------------
