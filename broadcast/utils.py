@@ -29,8 +29,27 @@ def paginate_queryset(queryset, page_number, per_page=MESSAGES_PER_PAGE):
 
 
 def get_client_ip(request):
-    """Extract the client IP from the request, respecting X-Forwarded-For."""
+    """Return the real client IP in a spoof-resistant way.
+
+    ``X-Forwarded-For`` is client-controlled: an attacker can send any value
+    and every proxy only *appends* to it. So we take the entry that was
+    added by our own outermost trusted proxy — counted from the right —
+    using ``settings.TRUSTED_PROXY_COUNT`` (0 = not behind a proxy).
+    """
+    import ipaddress
+
+    from django.conf import settings
+
+    proxy_count = getattr(settings, 'TRUSTED_PROXY_COUNT', 1)
+    ip = request.META.get('REMOTE_ADDR')
+
     forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
+    if proxy_count > 0 and forwarded:
+        parts = [p.strip() for p in forwarded.split(',') if p.strip()]
+        if parts:
+            ip = parts[-min(proxy_count, len(parts))]
+
+    try:
+        return str(ipaddress.ip_address(ip))
+    except (TypeError, ValueError):
+        return None
