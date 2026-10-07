@@ -42,37 +42,72 @@ def global_key(request):
     return 'all'
 
 
-# ---------------------------------------------------------------------------
-# Core counter logic
-# ---------------------------------------------------------------------------
+from django.db import transaction
+from django.utils import timezone
+from .models import RateLimit
+import random
 
 def _check_rules(request, rules):
     """Check every rule, and only if *all* pass increment their counters.
 
     *rules* is an iterable of ``(key_prefix, limit, period, key_func)``.
-    Checking first and incrementing afterwards means a request blocked by
-    one rule does not eat into the budget of the others (e.g. a blocked
-    per-IP request doesn't consume the global quota).
-
-    Returns the ``key_prefix`` of the rule that blocked, or ``None`` if allowed.
     """
-    buckets = []
+    now = timezone.now()
+    
+    # 1. Gather all keys for this request
+    cache_keys = []
     for key_prefix, limit, period, key_func in rules:
         identity = key_func(request)
-        if identity is None:
-            continue
-        cache_key = f"ratelimit_{key_prefix}_{identity}"
-        if cache.get(cache_key, 0) >= limit:
-            return key_prefix
-        buckets.append((cache_key, period))
+        if identity is None: continue
+        cache_keys.append((f"rl_{key_prefix}_{identity}", limit, period, key_prefix))
+        
+    if not cache_keys: 
+        return None
 
-    for cache_key, period in buckets:
-        # add() is atomic: only sets if the key doesn't exist yet.
-        if not cache.add(cache_key, 1, timeout=period):
-            try:
-                cache.incr(cache_key)
-            except ValueError:  # key expired between add() and incr()
-                cache.set(cache_key, 1, timeout=period)
+    # 2. Check limits and increment atomically
+    keys = [k[0] for k in cache_keys]
+    
+    with transaction.atomic():
+        # Fetch existing counters with lock to prevent TOCTOU
+        existing = {
+            rl.key: rl 
+            for rl in RateLimit.objects.select_for_update().filter(key__in=keys)
+        }
+        
+        # Check if ANY limit is exceeded
+        for key, limit, period, prefix in cache_keys:
+            rl = existing.get(key)
+            if rl and rl.reset_at > now and rl.count >= limit:
+                return prefix
+
+        # If all clear, apply increments
+        to_create = []
+        to_update = []
+        for key, limit, period, prefix in cache_keys:
+            rl = existing.get(key)
+            if rl:
+                if rl.reset_at <= now:
+                    rl.count = 1
+                    rl.reset_at = now + timezone.timedelta(seconds=period)
+                else:
+                    rl.count += 1
+                to_update.append(rl)
+            else:
+                to_create.append(RateLimit(
+                    key=key, 
+                    count=1, 
+                    reset_at=now + timezone.timedelta(seconds=period)
+                ))
+                
+        if to_update:
+            RateLimit.objects.bulk_update(to_update, ['count', 'reset_at'])
+        if to_create:
+            RateLimit.objects.bulk_create(to_create)
+
+    # 3. Occasional cleanup (1% chance)
+    if random.random() < 0.01:
+        RateLimit.objects.filter(reset_at__lt=now).delete()
+
     return None
 
 
