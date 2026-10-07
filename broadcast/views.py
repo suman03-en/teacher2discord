@@ -219,7 +219,8 @@ def link_detail(request, link_id, slug=None):
             return redirect('folder_detail', folder_id=folder_id)
 
         if action == 'send_message' and send_form.is_valid():
-            channel = link.channels.first()
+            channels = link.channels.all()
+            channel = channels[0] if channels else None
             if channel:
                 try:
                     send_discord_message(
@@ -233,13 +234,14 @@ def link_detail(request, link_id, slug=None):
             return redirect('link_detail', link_id=link.pk, slug=link.slug)
 
     # Pagination
-    channel = link.channels.first()
+    channels = link.channels.all()
+    channel = channels[0] if channels else None
     page_obj = None
     total_messages = 0
     if channel:
         msg_qs = channel.messages.all()
-        total_messages = msg_qs.count()
         page_obj = paginate_queryset(msg_qs, page_number=1)
+        total_messages = page_obj.paginator.count
 
     return render(request, 'broadcast/link_detail.html', {
         'link': link,
