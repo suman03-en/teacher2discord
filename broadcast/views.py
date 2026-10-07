@@ -14,7 +14,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .decorators import rate_limit
+from .decorators import magic_link_rate_limit, rate_limit
 from .exceptions import (
     DiscordDeliveryError,
     EmailError,
@@ -79,6 +79,7 @@ def home_view(request):
 
 
 @rate_limit(key_prefix='login_view', limit=5, period=60)
+@magic_link_rate_limit
 def login_view(request):
     """Step 1: Teacher enters their email."""
     if request.session.get('teacher_id'):
