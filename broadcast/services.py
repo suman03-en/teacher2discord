@@ -6,7 +6,13 @@ remain thin request/response handlers.
 """
 
 import logging
-from anymail.exceptions import AnymailError, AnymailAPIError
+from anymail.exceptions import (
+    AnymailAPIError,
+    AnymailConfigurationError,
+    AnymailError,
+    AnymailInvalidAddress,
+    AnymailRecipientsRefused,
+)
 from datetime import timedelta
 
 from django.conf import settings
@@ -18,8 +24,11 @@ from django.utils import timezone
 from .exceptions import (
     DiscordDeliveryError,
     EmailAuthenticationError,
+    EmailConfigurationError,
     EmailConnectionError,
     EmailDeliveryError,
+    EmailRateLimitError,
+    EmailRecipientError,
     StudentLinkAlreadyUsedError,
     TokenAlreadyUsedError,
     TokenExpiredError,
@@ -51,12 +60,15 @@ def create_login_token(email: str) -> LoginToken:
 
 
 def send_magic_link_email(email: str, verify_url: str) -> None:
-    """Send the magic-link email via Django's SMTP backend.
+    """Send the magic-link email via the Brevo API (django-anymail).
 
     Raises:
-        EmailAuthenticationError: SMTP credentials rejected or IP not whitelisted.
-        EmailConnectionError:     Cannot reach the SMTP server.
-        EmailDeliveryError:       Server accepted connection but refused the message.
+        EmailConfigurationError:  BREVO_API_KEY missing / backend misconfigured.
+        EmailAuthenticationError: Brevo rejected the API key (401/403).
+        EmailRateLimitError:      Brevo rate limit / quota exceeded (429).
+        EmailRecipientError:      Recipient address invalid or refused.
+        EmailConnectionError:     Could not reach the Brevo API.
+        EmailDeliveryError:       Any other Brevo API error.
     """
     base_url = verify_url.split('/auth/')[0]
     logo_url = f"{base_url}/static/broadcast/images/main_logo.png"
@@ -84,15 +96,26 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
             recipient_list=[email],
             fail_silently=False,
         )
-        logger.info("Magic link sent via SMTP to %s", email)
+        logger.info("Magic link sent via Brevo API to %s", email)
+    except AnymailConfigurationError as exc:
+        logger.error("Brevo backend misconfigured: %s", exc)
+        raise EmailConfigurationError(str(exc)) from exc
+    except (AnymailInvalidAddress, AnymailRecipientsRefused) as exc:
+        logger.warning("Brevo refused recipient %s: %s", email, exc)
+        raise EmailRecipientError(str(exc)) from exc
     except AnymailAPIError as exc:
-        logger.error("Brevo API error for %s: %s", email, exc)
+        status = getattr(exc, 'status_code', None)
+        logger.error("Brevo API error (status=%s) for %s: %s", status, email, exc)
+        if status is None:
+            # No HTTP response at all -> network/timeout/DNS failure.
+            raise EmailConnectionError(str(exc)) from exc
+        if status in (401, 403):
+            raise EmailAuthenticationError(str(exc)) from exc
+        if status == 429:
+            raise EmailRateLimitError(str(exc)) from exc
         raise EmailDeliveryError(str(exc)) from exc
     except AnymailError as exc:
         logger.error("Anymail error for %s: %s", email, exc)
-        raise EmailConnectionError(str(exc)) from exc
-    except ValueError as exc:
-        logger.error("Invalid email configuration: %s", exc)
         raise EmailDeliveryError(str(exc)) from exc
 
 
