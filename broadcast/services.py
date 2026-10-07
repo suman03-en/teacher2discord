@@ -120,7 +120,7 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
 
 
 def consume_login_token(login_token: LoginToken) -> None:
-    """Mark *login_token* as used.
+    """Mark *login_token* as used atomically.
 
     Raises:
         TokenExpiredError:    Token has passed its expiry time.
@@ -131,8 +131,12 @@ def consume_login_token(login_token: LoginToken) -> None:
     if timezone.now() >= login_token.expires_at:
         raise TokenExpiredError()
 
+    # Use atomic UPDATE to prevent double-use race conditions
+    updated = LoginToken.objects.filter(pk=login_token.pk, used=False).update(used=True)
+    if not updated:
+        raise TokenAlreadyUsedError()
+        
     login_token.used = True
-    login_token.save(update_fields=['used'])
 
 
 def set_teacher_session(request, teacher: Teacher) -> None:
