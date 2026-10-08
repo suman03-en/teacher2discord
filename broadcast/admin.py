@@ -1,4 +1,7 @@
+from datetime import timedelta
 from django.contrib import admin
+from django.db.models import Q
+from django.utils import timezone
 
 from .models import Channel, Folder, LoginToken, RateLimit, SentMessage, StudentLink, Teacher
 
@@ -11,6 +14,12 @@ class TeacherAdmin(admin.ModelAdmin):
     show_full_result_count = False
 
 
+@admin.action(description="Delete stale login tokens (used or expired)")
+def cleanup_stale_login_tokens(modeladmin, request, queryset):
+    stale = queryset.filter(Q(used=True) | Q(expires_at__lt=timezone.now()))
+    count, _ = stale.delete()
+    modeladmin.message_user(request, f"Successfully deleted {count} stale login tokens.")
+
 @admin.register(LoginToken)
 class LoginTokenAdmin(admin.ModelAdmin):
     list_display = ('email', 'token', 'created_at', 'expires_at', 'used')
@@ -18,6 +27,7 @@ class LoginTokenAdmin(admin.ModelAdmin):
     search_fields = ('email',)
     readonly_fields = ('token', 'created_at')
     show_full_result_count = False
+    actions = [cleanup_stale_login_tokens]
 
 
 @admin.register(Folder)
@@ -29,6 +39,13 @@ class FolderAdmin(admin.ModelAdmin):
     show_full_result_count = False
 
 
+@admin.action(description="Delete stale student links (unused & > 30 days old)")
+def cleanup_stale_student_links(modeladmin, request, queryset):
+    threshold = timezone.now() - timedelta(days=30)
+    stale = queryset.filter(used=False, created_at__lt=threshold)
+    count, _ = stale.delete()
+    modeladmin.message_user(request, f"Successfully deleted {count} stale student links.")
+
 @admin.register(StudentLink)
 class StudentLinkAdmin(admin.ModelAdmin):
     list_display = ('channel_name', 'folder', 'used', 'created_at')
@@ -36,6 +53,7 @@ class StudentLinkAdmin(admin.ModelAdmin):
     search_fields = ('channel_name', 'folder__name')
     readonly_fields = ('token', 'created_at')
     show_full_result_count = False  # Prevents duplicate COUNT queries
+    actions = [cleanup_stale_student_links]
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('folder')
