@@ -4,6 +4,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .fields import EncryptedTextField
+
 
 class RateLimit(models.Model):
     key = models.CharField(max_length=255, unique=True, db_index=True)
@@ -30,6 +32,12 @@ class LoginToken(models.Model):
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['expires_at', 'used']),
+        ]
+
     def is_valid(self):
         return not self.used and timezone.now() < self.expires_at
 
@@ -48,9 +56,6 @@ class Folder(models.Model):
 
     class Meta:
         ordering = ['name']
-
-    def is_leaf(self):
-        return not self.children.exists()
 
     def __str__(self):
         return self.name
@@ -73,11 +78,26 @@ class StudentLink(models.Model):
 
 class Channel(models.Model):
     student_link = models.ForeignKey(StudentLink, on_delete=models.CASCADE, related_name='channels')
-    webhook_url = models.URLField()
+    webhook_url = EncryptedTextField()
+    webhook_url_hash = models.CharField(
+        max_length=64,
+        db_index=True,
+        blank=True,
+        default='',
+        help_text='SHA-256 hash for indexed duplicate lookups.',
+    )
     connected_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, **kwargs):
+        # Auto-populate the hash whenever webhook_url is set.
+        if self.webhook_url:
+            from .crypto import hash_value
+            self.webhook_url_hash = hash_value(self.webhook_url)
+        super().save(**kwargs)
+
     def __str__(self):
-        return f"{self.student_link.channel_name} → {self.student_link.folder.name}"
+        return f"Channel #{self.pk}"
+
 
 class SentMessage(models.Model):
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='messages')
