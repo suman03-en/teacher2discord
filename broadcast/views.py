@@ -5,16 +5,16 @@ Each view is a thin request/response handler that delegates business
 logic to ``services`` and uses helpers from ``utils``.
 """
 
-import functools
 import logging
 
 from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .decorators import magic_link_rate_limit, rate_limit
+from .decorators import magic_link_rate_limit, rate_limit, teacher_required
 from .exceptions import (
     DiscordDeliveryError,
     EmailError,
@@ -44,29 +44,22 @@ from .services import (
     send_magic_link_email,
     set_teacher_session,
 )
-from .utils import build_breadcrumbs, paginate_queryset
+from .utils import BREADCRUMB_SELECT_RELATED, build_breadcrumbs, paginate_queryset
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Auth helpers
+# Helpers
 # ---------------------------------------------------------------------------
 
-def teacher_required(view_fn):
-    """Decorator: ensures a teacher is logged in via session."""
-    @functools.wraps(view_fn)
-    def wrapper(request, *args, **kwargs):
-        teacher_id = request.session.get('teacher_id')
-        if not teacher_id:
-            return redirect('login')
-        try:
-            request.teacher = Teacher.objects.get(pk=teacher_id)
-        except Teacher.DoesNotExist:
-            del request.session['teacher_id']
-            return redirect('login')
-        return view_fn(request, *args, **kwargs)
-    return wrapper
+def _parse_target_id(request):
+    """Return ``target_id`` from POST as an int, or ``None`` if invalid."""
+    raw = request.POST.get('target_id', '')
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +82,9 @@ def login_view(request):
     if request.method == 'POST' and form.is_valid():
         email = form.cleaned_data['email'].lower()
         token = create_login_token(email)
-        verify_url = request.build_absolute_uri(f'/auth/verify/{token.token}/')
+        verify_url = request.build_absolute_uri(
+            reverse('verify_token', args=[token.token])
+        )
 
         try:
             send_magic_link_email(email, verify_url)
@@ -105,8 +100,15 @@ def login_view(request):
 
 @rate_limit(key_prefix='verify_token', limit=10, period=60, post_only=False)
 def verify_token(request, token):
-    """Step 2: Teacher clicks the magic link."""
-    login_token = get_object_or_404(LoginToken, token=token)
+    """Step 2: Teacher clicks the magic link.
+
+    Returns the same error page for non-existent, expired, and used
+    tokens to prevent information leakage about token existence.
+    """
+    try:
+        login_token = LoginToken.objects.get(token=token)
+    except LoginToken.DoesNotExist:
+        return render(request, 'broadcast/token_invalid.html')
 
     try:
         consume_login_token(login_token)
@@ -135,21 +137,25 @@ def logout_view(request):
 @rate_limit(key_prefix='dashboard', limit=30, period=60, post_only=True)
 def dashboard(request):
     """Root-level folders for the logged-in teacher."""
-    root_folders = request.teacher.folders.filter(parent=None).annotate(children_count=Count('children'))
-    form = FolderForm(request.POST or None)
-
     if request.method == 'POST':
         action = request.POST.get('action')
 
         if action == 'delete_folder':
-            delete_folder(request.teacher, request.POST.get('target_id'))
-            messages.success(request, "Folder deleted successfully.")
+            target_id = _parse_target_id(request)
+            if target_id is not None:
+                delete_folder(request.teacher, target_id)
+                messages.success(request, "Folder deleted successfully.")
             return redirect('dashboard')
 
+        form = FolderForm(request.POST)
         if form.is_valid():
             create_folder(request.teacher, form.cleaned_data['name'])
             messages.success(request, f"Folder '{form.cleaned_data['name']}' created successfully.")
             return redirect('dashboard')
+    else:
+        form = FolderForm()
+
+    root_folders = request.teacher.folders.filter(parent=None).annotate(children_count=Count('children'))
 
     return render(request, 'broadcast/dashboard.html', {
         'folders': root_folders,
@@ -161,30 +167,39 @@ def dashboard(request):
 @rate_limit(key_prefix='folder_detail', limit=30, period=60, post_only=True)
 def folder_detail(request, folder_id):
     """View a folder: shows subfolders, student links, channels, and forms."""
-    folder = get_object_or_404(request.teacher.folders, pk=folder_id)
-    subfolders = folder.children.all()
-    student_links = folder.student_links.all()
-
-    folder_form = FolderForm(request.POST if request.POST.get('action') == 'create_folder' else None)
-    link_form = StudentLinkForm(request.POST if request.POST.get('action') == 'create_link' else None)
+    folder = request.teacher.folders.select_related(
+        BREADCRUMB_SELECT_RELATED,
+    ).get(pk=folder_id)
 
     if request.method == 'POST':
         action = request.POST.get('action')
 
-        if action == 'create_folder' and folder_form.is_valid():
-            create_folder(request.teacher, folder_form.cleaned_data['name'], parent=folder)
-            messages.success(request, f"Subfolder '{folder_form.cleaned_data['name']}' created successfully.")
+        if action == 'create_folder':
+            folder_form = FolderForm(request.POST)
+            if folder_form.is_valid():
+                create_folder(request.teacher, folder_form.cleaned_data['name'], parent=folder)
+                messages.success(request, f"Subfolder '{folder_form.cleaned_data['name']}' created successfully.")
+                return redirect('folder_detail', folder_id=folder.pk)
+
+        elif action == 'create_link':
+            link_form = StudentLinkForm(request.POST)
+            if link_form.is_valid():
+                create_student_link(folder, link_form.cleaned_data['channel_name'])
+                messages.success(request, f"Link '{link_form.cleaned_data['channel_name']}' created successfully.")
+                return redirect('folder_detail', folder_id=folder.pk)
+
+        elif action == 'delete_folder':
+            target_id = _parse_target_id(request)
+            if target_id is not None:
+                delete_folder(request.teacher, target_id)
+                messages.success(request, "Folder deleted successfully.")
             return redirect('folder_detail', folder_id=folder.pk)
 
-        if action == 'create_link' and link_form.is_valid():
-            create_student_link(folder, link_form.cleaned_data['channel_name'])
-            messages.success(request, f"Link '{link_form.cleaned_data['channel_name']}' created successfully.")
-            return redirect('folder_detail', folder_id=folder.pk)
-
-        if action == 'delete_folder':
-            delete_folder(request.teacher, request.POST.get('target_id'))
-            messages.success(request, "Folder deleted successfully.")
-            return redirect('folder_detail', folder_id=folder.pk)
+    # Querysets only evaluated for GET (or invalid POST that falls through)
+    subfolders = folder.children.all()
+    student_links = folder.student_links.all()
+    folder_form = FolderForm()
+    link_form = StudentLinkForm()
 
     return render(request, 'broadcast/folder_detail.html', {
         'folder': folder,
@@ -200,12 +215,17 @@ def folder_detail(request, folder_id):
 @rate_limit(key_prefix='link_detail', limit=20, period=60, post_only=True)
 def link_detail(request, link_id, slug=None):
     """View a single student link — send messages, see history."""
-    link = get_object_or_404(
-        StudentLink.objects.select_related('folder').prefetch_related('channels'),
+    link = StudentLink.objects.select_related(
+        f'folder__{BREADCRUMB_SELECT_RELATED}',
+    ).prefetch_related('channels').get(
         pk=link_id, folder__teacher=request.teacher,
     )
     if slug != link.slug:
         return redirect('link_detail', link_id=link.pk, slug=link.slug)
+
+    # Reuse prefetched channels throughout this view
+    channels = list(link.channels.all())
+    channel = channels[0] if channels else None
 
     send_form = SendMessageForm(request.POST or None, request.FILES or None)
 
@@ -219,8 +239,6 @@ def link_detail(request, link_id, slug=None):
             return redirect('folder_detail', folder_id=folder_id)
 
         if action == 'send_message' and send_form.is_valid():
-            channels = link.channels.all()
-            channel = channels[0] if channels else None
             if channel:
                 try:
                     send_discord_message(
@@ -234,8 +252,6 @@ def link_detail(request, link_id, slug=None):
             return redirect('link_detail', link_id=link.pk, slug=link.slug)
 
     # Pagination
-    channels = link.channels.all()
-    channel = channels[0] if channels else None
     page_obj = None
     total_messages = 0
     if channel:
@@ -254,10 +270,10 @@ def link_detail(request, link_id, slug=None):
 
 
 @teacher_required
+@rate_limit(key_prefix='link_messages', limit=60, period=60, post_only=False)
 def link_messages(request, link_id):
     """Returns paginated message items as HTML fragments for AJAX loading."""
-    link = get_object_or_404(
-        StudentLink.objects.select_related('folder'),
+    link = StudentLink.objects.select_related('folder').get(
         pk=link_id, folder__teacher=request.teacher,
     )
     channel = link.channels.first()
@@ -281,10 +297,13 @@ def link_messages(request, link_id):
 @rate_limit(key_prefix='student_connect', limit=5, period=60)
 def student_connect(request, token):
     """Student lands here via magic link. One-time use — raises 404 if already used."""
-    student_link = get_object_or_404(
-        StudentLink.objects.select_related('folder'),
-        token=token, used=False,
-    )
+    try:
+        student_link = StudentLink.objects.select_related('folder').get(
+            token=token, used=False,
+        )
+    except StudentLink.DoesNotExist:
+        from django.http import Http404
+        raise Http404
 
     form = StudentConnectForm(request.POST or None)
 

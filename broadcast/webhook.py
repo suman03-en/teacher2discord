@@ -50,5 +50,6 @@ class Webhook:
         self.close()
 
     @classmethod
-    def from_url(cls, url: str, name: str = "Webhook") -> "Webhook":
+    def from_url(cls, url: str, name: str = "unnamed") -> "Webhook":
+        """Create a Webhook from a URL, optionally with a descriptive name."""
         return cls(name, url)

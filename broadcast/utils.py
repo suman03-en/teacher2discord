@@ -4,9 +4,20 @@ Reusable utility helpers for the broadcast app.
 These are pure helper functions with no database side-effects.
 """
 
+import ipaddress
+
+from django.conf import settings
 from django.core.paginator import Paginator
 
 MESSAGES_PER_PAGE = 10
+
+# Maximum depth of ``select_related`` parent prefetching used when
+# loading folders for breadcrumb generation.  If folder nesting exceeds
+# this depth, extra queries will fire for the remaining ancestors.
+_MAX_BREADCRUMB_DEPTH = 6
+
+# Precomputed lookup chain for select_related (e.g. "parent__parent__parent…")
+BREADCRUMB_SELECT_RELATED = '__'.join(['parent'] * _MAX_BREADCRUMB_DEPTH)
 
 
 def build_breadcrumbs(node):
@@ -14,9 +25,18 @@ def build_breadcrumbs(node):
 
     Returns a list ordered from root → current node.
     Works for any model that has a `parent` FK to itself.
+
+    .. tip::
+       For best performance, load *node* with
+       ``select_related('parent__parent__…')`` so the walk hits no extra
+       queries.  Use :data:`BREADCRUMB_SELECT_RELATED` as a convenience.
     """
     crumbs = []
+    seen = set()  # guard against accidental cycles
     while node:
+        if node.pk in seen:
+            break
+        seen.add(node.pk)
         crumbs.insert(0, node)
         node = node.parent
     return crumbs
@@ -36,10 +56,6 @@ def get_client_ip(request):
     added by our own outermost trusted proxy — counted from the right —
     using ``settings.TRUSTED_PROXY_COUNT`` (0 = not behind a proxy).
     """
-    import ipaddress
-
-    from django.conf import settings
-
     proxy_count = getattr(settings, 'TRUSTED_PROXY_COUNT', 1)
     ip = request.META.get('REMOTE_ADDR')
 

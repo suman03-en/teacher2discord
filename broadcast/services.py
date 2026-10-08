@@ -21,6 +21,7 @@ from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from .crypto import hash_value
 from .exceptions import (
     DiscordDeliveryError,
     EmailAuthenticationError,
@@ -70,8 +71,13 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
         EmailConnectionError:     Could not reach the Brevo API.
         EmailDeliveryError:       Any other Brevo API error.
     """
-    base_url = verify_url.split('/auth/')[0]
+    # Derive base_url from the verify_url without coupling to URL structure.
+    from urllib.parse import urlparse
+    parsed = urlparse(verify_url)
+    base_url = f"{parsed.scheme}://{parsed.netloc}"
     logo_url = f"{base_url}/static/broadcast/images/main_logo.png"
+
+    expiry_minutes = getattr(settings, 'LOGIN_TOKEN_EXPIRY_MINUTES', 15)
 
     context = {
         'verify_url': verify_url,
@@ -80,7 +86,8 @@ def send_magic_link_email(email: str, verify_url: str) -> None:
     }
 
     text_content = (
-        f"Hi,\n\nClick the link below to log in (expires in 15 minutes):\n\n"
+        f"Hi,\n\nClick the link below to log in "
+        f"(expires in {expiry_minutes} minutes):\n\n"
         f"{verify_url}\n\n"
         f"If you did not request this, ignore this email."
     )
@@ -140,7 +147,11 @@ def consume_login_token(login_token: LoginToken) -> None:
 
 
 def set_teacher_session(request, teacher: Teacher) -> None:
-    """Persist teacher identity in the Django session."""
+    """Persist teacher identity in the Django session.
+
+    Cycles the session key first to prevent session-fixation attacks.
+    """
+    request.session.cycle_key()
     request.session['teacher_id'] = teacher.pk
     request.session.set_expiry(60 * 60 * 8)  # 8-hour session
 
@@ -154,7 +165,7 @@ def create_folder(teacher: Teacher, name: str, parent: Folder | None = None) -> 
     return Folder.objects.create(teacher=teacher, name=name, parent=parent)
 
 
-def delete_folder(teacher: Teacher, folder_id) -> bool:
+def delete_folder(teacher: Teacher, folder_id: int) -> bool:
     """Delete a folder owned by *teacher*. Returns True if anything was deleted."""
     deleted, _ = Folder.objects.filter(pk=folder_id, teacher=teacher).delete()
     return deleted > 0
@@ -196,17 +207,26 @@ def send_discord_message(channel: Channel, message_text: str, uploaded_file=None
             'files[0]': (uploaded_file.name, uploaded_file, uploaded_file.content_type),
         }
 
-    with Webhook.from_url(channel.webhook_url) as wh:
+    webhook_name = f"channel-{channel.pk}"
+    with Webhook.from_url(channel.webhook_url, name=webhook_name) as wh:
         success = wh.send_message(payload, files=discord_files)
 
     if not success:
         raise DiscordDeliveryError()
 
-    SentMessage.objects.create(
-        channel=channel,
-        content=payload.get('content', ''),
-        attachment_name=uploaded_file.name if uploaded_file else '',
-    )
+    try:
+        SentMessage.objects.create(
+            channel=channel,
+            content=payload.get('content', ''),
+            attachment_name=uploaded_file.name if uploaded_file else '',
+        )
+    except Exception:
+        # Message was delivered but history persistence failed — log and
+        # continue so the user sees a success (the message *was* sent).
+        logger.exception(
+            "SentMessage persistence failed for channel %s after successful delivery",
+            channel.pk,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -216,12 +236,15 @@ def send_discord_message(channel: Channel, message_text: str, uploaded_file=None
 def check_webhook_duplicate(folder: Folder, webhook_url: str) -> None:
     """Raise if *webhook_url* is already connected inside *folder*.
 
+    Uses the indexed hash field for efficient lookups on encrypted data.
+
     Raises:
         WebhookDuplicateError: Webhook already exists in this folder.
     """
+    url_hash = hash_value(webhook_url)
     if Channel.objects.filter(
         student_link__folder=folder,
-        webhook_url=webhook_url,
+        webhook_url_hash=url_hash,
     ).exists():
         raise WebhookDuplicateError()
 

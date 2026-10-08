@@ -1,23 +1,47 @@
 """
-Rate-limiting decorators for the broadcast app.
+Rate-limiting and auth decorators for the broadcast app.
 
-All counters live in Django's cache (configured as a shared DatabaseCache
-in settings) so limits are enforced across every gunicorn worker.
+All counters live in the database (``RateLimit`` model) so limits are
+enforced across every gunicorn worker.
 """
 
 import functools
 import hashlib
 import logging
+import random
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
+from django.db import transaction
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
+from django.utils import timezone
 
+from .models import RateLimit, Teacher
 from .utils import get_client_ip
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Auth decorator (§2.1 — moved here from views.py)
+# ---------------------------------------------------------------------------
+
+def teacher_required(view_fn):
+    """Decorator: ensures a teacher is logged in via session."""
+    @functools.wraps(view_fn)
+    def wrapper(request, *args, **kwargs):
+        teacher_id = request.session.get('teacher_id')
+        if not teacher_id:
+            return redirect('login')
+        try:
+            request.teacher = Teacher.objects.get(pk=teacher_id)
+        except Teacher.DoesNotExist:
+            del request.session['teacher_id']
+            return redirect('login')
+        return view_fn(request, *args, **kwargs)
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
@@ -41,11 +65,6 @@ def global_key(request):
     """A single shared bucket for all requests."""
     return 'all'
 
-
-from django.db import transaction
-from django.utils import timezone
-from .models import RateLimit
-import random
 
 def _check_rules(request, rules):
     """Check every rule, and only if *all* pass increment their counters.
