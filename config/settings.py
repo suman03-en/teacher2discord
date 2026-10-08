@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'broadcast.middleware.ContentSecurityPolicyMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -130,6 +131,12 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 
 # Magic link expiry (minutes)
 LOGIN_TOKEN_EXPIRY_MINUTES = 15
+
+# ---------------------------------------------------------------------------
+# Webhook encryption (Fernet symmetric key)
+# Generate with: python -c "import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+# ---------------------------------------------------------------------------
+FIELD_ENCRYPTION_KEY = os.environ.get('FIELD_ENCRYPTION_KEY', '')
 
 # ---------------------------------------------------------------------------
 # Cache — shared across all gunicorn workers so rate-limit counters are
