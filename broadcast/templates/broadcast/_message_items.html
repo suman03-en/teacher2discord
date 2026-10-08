@@ -1,7 +1,8 @@
+{% load tz %}
 {% for msg in page_obj %}
 <div class="message-item">
     <div class="message-meta">
-        <strong>{{ link.channel_name }}</strong> &mdash; {{ msg.sent_at|date:"M j, Y, g:i a" }}
+        <strong>{{ link.channel_name }}</strong> &mdash; {{ msg.sent_at|localtime|date:"M j, Y, g:i a" }}
     </div>
     {% if msg.content %}
     <div class="message-body">{{ msg.content }}</div>
