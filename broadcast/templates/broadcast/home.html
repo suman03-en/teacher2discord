@@ -5,16 +5,20 @@
 
 {% block content %}
 <div style="text-align: center; padding: 4rem 1rem; max-width: 600px; margin: 0 auto;">
-    <img src="{% static 'broadcast/images/main_logo.png' %}" alt="Teacher2Discord Logo" style="max-width: 100%; max-height: 200px; margin-bottom: 2rem;">
+    <img src="{% static 'broadcast/images/main_logo.png' %}" alt="Teacher2Discord Logo"
+        style="max-width: 100%; max-height: 200px; margin-bottom: 2rem;">
     <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2.5rem; line-height: 1.6;">
-        A simple, passwordless platform that bridges the gap between classrooms and Discord. 
-        Organize your classes, generate secure invite links, and broadcast announcements and files directly to your students' Discord webhooks from one unified dashboard.
+        A simple, passwordless platform that bridges the gap between classrooms and Discord.
+        Organize your classes, generate secure invite links, and broadcast announcements and files directly to your
+        students' Discord webhooks from one unified dashboard.
     </p>
-    
+
     {% if request.session.teacher_id %}
-        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Go to Dashboard</a>
+    <a href="{% url 'dashboard' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Go to
+        Dashboard</a>
     {% else %}
-        <a href="{% url 'login' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Teacher Login</a>
+    <a href="{% url 'login' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Teacher
+        Login</a>
     {% endif %}
 </div>
 {% endblock %}

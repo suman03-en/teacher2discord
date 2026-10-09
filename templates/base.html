@@ -36,7 +36,7 @@
                 {% for message in messages %}
                     <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
                         <span>{{ message }}</span>
-                        <button class="close-btn" onclick="this.parentElement.remove()">✕</button>
+                        <button class="close-btn" data-dismiss="alert">✕</button>
                     </div>
                 {% endfor %}
             </div>
@@ -54,7 +54,7 @@
             <h3 id="deleteModalTitle">Delete this item?</h3>
             <p id="deleteModalDesc">This action cannot be undone.</p>
             <div class="modal-actions">
-                <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-ghost" data-dismiss="modal">Cancel</button>
                 <button class="btn btn-danger" id="deleteModalConfirm">Delete</button>
             </div>
         </div>

@@ -16,6 +16,13 @@ function initAlertDismiss() {
     const container = document.getElementById('message-container');
     if (!container) return;
 
+    // Delegate click events for close buttons
+    container.addEventListener('click', (e) => {
+        if (e.target.matches('.close-btn')) {
+            e.target.parentElement.remove();
+        }
+    });
+
     setTimeout(() => {
         container.style.transition = 'opacity 0.5s ease';
         container.style.opacity = '0';
@@ -39,6 +46,34 @@ function initDeleteModal() {
             pendingDeleteForm.submit();
         }
         closeDeleteModal();
+    });
+
+    // Delegate click events for delete triggers
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action="confirm-delete"]');
+        if (btn) {
+            confirmDelete(btn, btn.dataset.title, btn.dataset.desc);
+        }
+        
+        const cancelBtn = e.target.closest('[data-dismiss="modal"]');
+        if (cancelBtn) {
+            closeDeleteModal();
+        }
+        
+        const copyBtn = e.target.closest('[data-action="copy-link"]');
+        if (copyBtn) {
+            const target = document.getElementById(copyBtn.dataset.target);
+            if (target) {
+                navigator.clipboard.writeText(target.innerText);
+                copyBtn.innerText = 'Copied!';
+                setTimeout(() => copyBtn.innerText = 'Copy', 2000);
+            }
+        }
+        
+        const loadBtn = e.target.closest('[data-action="load-more"]');
+        if (loadBtn) {
+            loadMoreMessages(loadBtn);
+        }
     });
 
     // Close on backdrop click

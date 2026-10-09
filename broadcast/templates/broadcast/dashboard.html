@@ -15,8 +15,8 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="delete_folder">
             <input type="hidden" name="target_id" value="{{ folder.pk }}">
-            <button type="button" class="btn btn-danger btn-sm"
-                onclick="confirmDelete(this, 'Delete folder?', 'This will permanently delete \'{{ folder.name }}\' and all its contents.')">
+            <button type="button" class="btn btn-danger btn-sm" data-action="confirm-delete" data-title="Delete folder?"
+                data-desc="This will permanently delete '{{ folder.name|escapejs }}' and all its contents.">
                 ✕
             </button>
         </form>

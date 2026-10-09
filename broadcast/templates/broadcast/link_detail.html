@@ -28,7 +28,9 @@
         {% csrf_token %}
         <input type="hidden" name="action" value="delete_link">
         <button type="button" class="btn btn-danger btn-sm"
-            onclick="confirmDelete(this, 'Delete this link?', 'This will remove the link and disconnect the associated channel. This cannot be undone.')">
+            data-action="confirm-delete"
+            data-title="Delete this link?"
+            data-desc="This will remove the link and disconnect the associated channel. This cannot be undone.">
             ✕ Delete Link
         </button>
     </form>
@@ -41,7 +43,7 @@
         <div class="copy-row">
             <div class="copy-box" id="magicLink">{{ request.scheme }}://{{ request.get_host }}{% url 'student_connect' link.token %}</div>
             <button type="button" class="btn btn-outline" data-no-loader
-                onclick="navigator.clipboard.writeText(document.getElementById('magicLink').innerText); this.innerText='Copied!'; setTimeout(() => this.innerText='Copy', 2000);">
+                data-action="copy-link" data-target="magicLink">
                 Copy
             </button>
         </div>
@@ -76,7 +78,7 @@
                     data-url="{% url 'link_messages' link.pk %}"
                     data-next-page="{{ page_obj.next_page_number }}"
                     data-total-pages="{{ page_obj.paginator.num_pages }}"
-                    onclick="loadMoreMessages(this)"
+                    data-action="load-more"
                     data-no-loader>
                     Load Older Messages
                 </button>

@@ -65,6 +65,18 @@
             <p>No channels or links yet.<br>Create a student link above to get started.</p>
         </div>
     {% endfor %}
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-ghost">&laquo; Prev</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-ghost">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 {# ── Subfolders List ── #}
@@ -82,7 +94,9 @@
                 <input type="hidden" name="action" value="delete_folder">
                 <input type="hidden" name="target_id" value="{{ sub.pk }}">
                 <button type="button" class="btn btn-danger btn-sm"
-                    onclick="confirmDelete(this, 'Delete subfolder?', 'This will permanently delete \'{{ sub.name }}\' and all its contents.')">
+                    data-action="confirm-delete"
+                    data-title="Delete subfolder?"
+                    data-desc="This will permanently delete '{{ sub.name|escapejs }}' and all its contents.">
                     ✕
                 </button>
             </form>

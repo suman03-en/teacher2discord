@@ -26,7 +26,7 @@ class ContentSecurityPolicyMiddleware:
 
             directives = getattr(settings, "CSP_DIRECTIVES", None) or {
                 "default-src": "'self'",
-                "script-src": "'self' 'unsafe-inline'",
+                "script-src": "'self'",
                 "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "font-src": "'self' https://fonts.gstatic.com",
                 "img-src": "'self' data:",
