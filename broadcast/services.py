@@ -6,6 +6,8 @@ remain thin request/response handlers.
 """
 
 import logging
+from datetime import timedelta
+
 from anymail.exceptions import (
     AnymailAPIError,
     AnymailConfigurationError,
@@ -13,11 +15,9 @@ from anymail.exceptions import (
     AnymailInvalidAddress,
     AnymailRecipientsRefused,
 )
-from datetime import timedelta
-
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -203,8 +203,10 @@ def send_discord_message(channel: Channel, message_text: str, uploaded_file=None
     discord_files = None
 
     if uploaded_file:
+        import mimetypes
+        content_type = mimetypes.guess_type(uploaded_file.name)[0] or 'application/octet-stream'
         discord_files = {
-            'files[0]': (uploaded_file.name, uploaded_file, uploaded_file.content_type),
+            'files[0]': (uploaded_file.name, uploaded_file, content_type),
         }
 
     webhook_name = f"channel-{channel.pk}"
@@ -220,7 +222,7 @@ def send_discord_message(channel: Channel, message_text: str, uploaded_file=None
             content=payload.get('content', ''),
             attachment_name=uploaded_file.name if uploaded_file else '',
         )
-    except Exception:
+    except DatabaseError:
         # Message was delivered but history persistence failed — log and
         # continue so the user sees a success (the message *was* sent).
         logger.exception(

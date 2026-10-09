@@ -56,11 +56,11 @@ def decrypt_value(value: str) -> str:
     if not value.startswith(_ENCRYPTED_PREFIX):
         return value  # plaintext — not yet encrypted
     try:
-        ciphertext = value[len(_ENCRYPTED_PREFIX):]
+        ciphertext = value[len(_ENCRYPTED_PREFIX) :]
         return _get_fernet().decrypt(ciphertext.encode()).decode()
-    except (InvalidToken, Exception) as exc:
+    except InvalidToken as exc:
         logger.error("Failed to decrypt value: %s", exc)
-        return value  # return as-is so the app doesn't crash
+        return ""  # return empty string to avoid leaking ciphertext
 
 
 def hash_value(plaintext: str) -> str:
