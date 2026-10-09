@@ -22,7 +22,15 @@ from .exceptions import (
     WebhookDuplicateError,
 )
 from .forms import SendMessageForm, StudentConnectForm
-from .models import Channel, Folder, LoginToken, RateLimit, SentMessage, StudentLink, Teacher
+from .models import (
+    Channel,
+    Folder,
+    LoginToken,
+    RateLimit,
+    SentMessage,
+    StudentLink,
+    Teacher,
+)
 from .services import (
     check_webhook_duplicate,
     connect_student_webhook,
@@ -41,7 +49,8 @@ from .utils import build_breadcrumbs
 # Crypto tests
 # ---------------------------------------------------------------------------
 
-@override_settings(FIELD_ENCRYPTION_KEY='dGVzdC1rZXktMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0')
+
+@override_settings(FIELD_ENCRYPTION_KEY="dGVzdC1rZXktMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0")
 class CryptoTests(TestCase):
     """Tests for broadcast.crypto encrypt/decrypt/hash utilities."""
 
@@ -50,6 +59,7 @@ class CryptoTests(TestCase):
         super().setUpClass()
         # Generate a valid Fernet key for tests
         import base64, secrets
+
         cls.fernet_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
 
     @override_settings()
@@ -105,15 +115,14 @@ class CryptoTests(TestCase):
 # Model tests
 # ---------------------------------------------------------------------------
 
-class TeacherModelTests(TestCase):
 
+class TeacherModelTests(TestCase):
     def test_str(self):
         teacher = Teacher.objects.create(email="test@school.com")
         self.assertEqual(str(teacher), "test@school.com")
 
 
 class LoginTokenModelTests(TestCase):
-
     def test_is_valid_fresh_token(self):
         token = LoginToken.objects.create(
             email="t@s.com",
@@ -138,19 +147,17 @@ class LoginTokenModelTests(TestCase):
 
 
 class FolderModelTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
 
     def test_ordering(self):
         Folder.objects.create(teacher=self.teacher, name="Zebra")
         Folder.objects.create(teacher=self.teacher, name="Alpha")
-        names = list(self.teacher.folders.values_list('name', flat=True))
+        names = list(self.teacher.folders.values_list("name", flat=True))
         self.assertEqual(names, ["Alpha", "Zebra"])
 
 
 class ChannelModelTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
         self.folder = Folder.objects.create(teacher=self.teacher, name="F1")
@@ -159,7 +166,10 @@ class ChannelModelTests(TestCase):
     @override_settings()
     def test_webhook_url_hash_auto_populated(self):
         import base64, secrets
-        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode()
 
         url = "https://discord.com/api/webhooks/123/abc-def"
         channel = Channel.objects.create(student_link=self.link, webhook_url=url)
@@ -171,8 +181,8 @@ class ChannelModelTests(TestCase):
 # Service tests
 # ---------------------------------------------------------------------------
 
-class AuthServiceTests(TestCase):
 
+class AuthServiceTests(TestCase):
     def test_get_or_create_teacher_new(self):
         teacher = get_or_create_teacher("NEW@School.com")
         self.assertEqual(teacher.email, "new@school.com")
@@ -217,22 +227,22 @@ class AuthServiceTests(TestCase):
     def test_set_teacher_session_cycles_key(self):
         teacher = Teacher.objects.create(email="t@s.com")
         factory = RequestFactory()
-        request = factory.get('/')
+        request = factory.get("/")
 
         # Attach a mock session
         from django.contrib.sessions.backends.db import SessionStore
+
         request.session = SessionStore()
         request.session.create()
         old_key = request.session.session_key
 
         set_teacher_session(request, teacher)
 
-        self.assertEqual(request.session['teacher_id'], teacher.pk)
+        self.assertEqual(request.session["teacher_id"], teacher.pk)
         self.assertNotEqual(request.session.session_key, old_key)
 
 
 class FolderServiceTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
 
@@ -260,7 +270,6 @@ class FolderServiceTests(TestCase):
 
 
 class StudentLinkServiceTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
         self.folder = Folder.objects.create(teacher=self.teacher, name="F1")
@@ -273,7 +282,6 @@ class StudentLinkServiceTests(TestCase):
 
 
 class WebhookDuplicateTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
         self.folder = Folder.objects.create(teacher=self.teacher, name="F1")
@@ -281,14 +289,20 @@ class WebhookDuplicateTests(TestCase):
     @override_settings()
     def test_check_webhook_duplicate_no_duplicate(self):
         import base64, secrets
-        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode()
         # Should not raise
         check_webhook_duplicate(self.folder, "https://discord.com/api/webhooks/999/new")
 
     @override_settings()
     def test_check_webhook_duplicate_raises(self):
         import base64, secrets
-        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode()
 
         link = StudentLink.objects.create(folder=self.folder, channel_name="Ch1")
         url = "https://discord.com/api/webhooks/123/existing"
@@ -299,7 +313,6 @@ class WebhookDuplicateTests(TestCase):
 
 
 class ConnectStudentWebhookTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
         self.folder = Folder.objects.create(teacher=self.teacher, name="F1")
@@ -307,7 +320,10 @@ class ConnectStudentWebhookTests(TestCase):
     @override_settings()
     def test_connect_success(self):
         import base64, secrets
-        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode()
 
         link = StudentLink.objects.create(folder=self.folder, channel_name="Ch1")
         url = "https://discord.com/api/webhooks/123/test"
@@ -320,7 +336,10 @@ class ConnectStudentWebhookTests(TestCase):
     @override_settings()
     def test_connect_already_used_raises(self):
         import base64, secrets
-        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+
+        settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode()
 
         link = StudentLink.objects.create(
             folder=self.folder, channel_name="Ch1", used=True
@@ -333,8 +352,8 @@ class ConnectStudentWebhookTests(TestCase):
 # Utility tests
 # ---------------------------------------------------------------------------
 
-class BreadcrumbTests(TestCase):
 
+class BreadcrumbTests(TestCase):
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
 
@@ -347,7 +366,9 @@ class BreadcrumbTests(TestCase):
     def test_nested_folder_breadcrumbs(self):
         root = Folder.objects.create(teacher=self.teacher, name="Root")
         child = Folder.objects.create(teacher=self.teacher, name="Child", parent=root)
-        grandchild = Folder.objects.create(teacher=self.teacher, name="GChild", parent=child)
+        grandchild = Folder.objects.create(
+            teacher=self.teacher, name="GChild", parent=child
+        )
 
         crumbs = build_breadcrumbs(grandchild)
         self.assertEqual(len(crumbs), 3)
@@ -360,44 +381,44 @@ class BreadcrumbTests(TestCase):
 # Rate-limit decorator tests
 # ---------------------------------------------------------------------------
 
-class RateLimitTests(TestCase):
 
+class RateLimitTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
     def test_check_rules_allows_under_limit(self):
-        request = self.factory.post('/')
-        request.META['REMOTE_ADDR'] = '127.0.0.1'
-        result = _check_rules(request, [('test', 5, 60, ip_key)])
+        request = self.factory.post("/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
+        result = _check_rules(request, [("test", 5, 60, ip_key)])
         self.assertIsNone(result)
 
     def test_check_rules_blocks_over_limit(self):
-        request = self.factory.post('/')
-        request.META['REMOTE_ADDR'] = '127.0.0.1'
+        request = self.factory.post("/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
 
         # Exhaust the limit
         for _ in range(5):
-            _check_rules(request, [('test_block', 5, 60, ip_key)])
+            _check_rules(request, [("test_block", 5, 60, ip_key)])
 
         # Next request should be blocked
-        result = _check_rules(request, [('test_block', 5, 60, ip_key)])
-        self.assertEqual(result, 'test_block')
+        result = _check_rules(request, [("test_block", 5, 60, ip_key)])
+        self.assertEqual(result, "test_block")
 
     def test_check_rules_resets_after_expiry(self):
-        request = self.factory.post('/')
-        request.META['REMOTE_ADDR'] = '127.0.0.1'
+        request = self.factory.post("/")
+        request.META["REMOTE_ADDR"] = "127.0.0.1"
 
         # Exhaust the limit with a 1-second period
         for _ in range(3):
-            _check_rules(request, [('test_reset', 3, 1, ip_key)])
+            _check_rules(request, [("test_reset", 3, 1, ip_key)])
 
         # Manually expire the counter
-        RateLimit.objects.filter(key__startswith='rl_test_reset').update(
+        RateLimit.objects.filter(key__startswith="rl_test_reset").update(
             reset_at=timezone.now() - timedelta(seconds=1)
         )
 
         # Should be allowed again
-        result = _check_rules(request, [('test_reset', 3, 1, ip_key)])
+        result = _check_rules(request, [("test_reset", 3, 1, ip_key)])
         self.assertIsNone(result)
 
 
@@ -405,8 +426,8 @@ class RateLimitTests(TestCase):
 # View tests
 # ---------------------------------------------------------------------------
 
-class TeacherRequiredDecoratorTests(TestCase):
 
+class TeacherRequiredDecoratorTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.teacher = Teacher.objects.create(email="t@s.com")
@@ -416,8 +437,9 @@ class TeacherRequiredDecoratorTests(TestCase):
         def dummy_view(request):
             return "ok"
 
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         from django.contrib.sessions.backends.db import SessionStore
+
         request.session = SessionStore()
 
         response = dummy_view(request)
@@ -428,10 +450,11 @@ class TeacherRequiredDecoratorTests(TestCase):
         def dummy_view(request):
             return request.teacher
 
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         from django.contrib.sessions.backends.db import SessionStore
+
         request.session = SessionStore()
-        request.session['teacher_id'] = self.teacher.pk
+        request.session["teacher_id"] = self.teacher.pk
         request.session.save()
 
         result = dummy_view(request)
@@ -439,71 +462,74 @@ class TeacherRequiredDecoratorTests(TestCase):
 
 
 class AuthViewTests(TestCase):
-
     def test_home_view(self):
-        response = self.client.get('/')
+        response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
 
     def test_login_view_get(self):
-        response = self.client.get('/login/')
+        response = self.client.get("/login/")
         self.assertEqual(response.status_code, 200)
 
     def test_logout_requires_post(self):
-        response = self.client.get('/auth/logout/')
+        response = self.client.get("/auth/logout/")
         self.assertEqual(response.status_code, 405)
 
     def test_verify_nonexistent_token(self):
         fake_token = uuid.uuid4()
-        response = self.client.get(f'/auth/verify/{fake_token}/')
+        response = self.client.get(f"/auth/verify/{fake_token}/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'broadcast/token_invalid.html')
+        self.assertTemplateUsed(response, "broadcast/token_invalid.html")
 
     def test_verify_expired_token(self):
         token = LoginToken.objects.create(
             email="t@s.com",
             expires_at=timezone.now() - timedelta(minutes=1),
         )
-        response = self.client.get(f'/auth/verify/{token.token}/')
+        response = self.client.get(f"/auth/verify/{token.token}/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'broadcast/token_invalid.html')
+        self.assertTemplateUsed(response, "broadcast/token_invalid.html")
 
     def test_verify_valid_token_logs_in(self):
         token = LoginToken.objects.create(
             email="t@s.com",
             expires_at=timezone.now() + timedelta(minutes=15),
         )
-        response = self.client.get(f'/auth/verify/{token.token}/')
+        response = self.client.get(f"/auth/verify/{token.token}/")
         self.assertEqual(response.status_code, 302)  # redirects to dashboard
-        self.assertIn('teacher_id', self.client.session)
+        self.assertIn("teacher_id", self.client.session)
 
 
 class DashboardViewTests(TestCase):
-
     def setUp(self):
         self.teacher = Teacher.objects.create(email="t@s.com")
         session = self.client.session
-        session['teacher_id'] = self.teacher.pk
+        session["teacher_id"] = self.teacher.pk
         session.save()
 
     def test_dashboard_requires_login(self):
         self.client.session.flush()
-        response = self.client.get('/dashboard/')
+        response = self.client.get("/dashboard/")
         self.assertEqual(response.status_code, 302)
 
     def test_dashboard_get(self):
-        response = self.client.get('/dashboard/')
+        response = self.client.get("/dashboard/")
         self.assertEqual(response.status_code, 200)
 
     def test_create_folder_via_post(self):
-        response = self.client.post('/dashboard/', {'name': 'Test Folder'})
+        response = self.client.post("/dashboard/", {"name": "Test Folder"})
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Folder.objects.filter(teacher=self.teacher, name='Test Folder').exists())
+        self.assertTrue(
+            Folder.objects.filter(teacher=self.teacher, name="Test Folder").exists()
+        )
 
     def test_delete_folder_validates_target_id(self):
-        response = self.client.post('/dashboard/', {
-            'action': 'delete_folder',
-            'target_id': 'not-a-number',
-        })
+        response = self.client.post(
+            "/dashboard/",
+            {
+                "action": "delete_folder",
+                "target_id": "not-a-number",
+            },
+        )
         self.assertEqual(response.status_code, 302)  # redirects, no crash
 
 
@@ -511,11 +537,11 @@ class DashboardViewTests(TestCase):
 # CSP middleware tests
 # ---------------------------------------------------------------------------
 
-class CSPMiddlewareTests(TestCase):
 
+class CSPMiddlewareTests(TestCase):
     def test_csp_header_present(self):
-        response = self.client.get('/')
-        self.assertIn('Content-Security-Policy', response)
-        csp = response['Content-Security-Policy']
+        response = self.client.get("/")
+        self.assertIn("Content-Security-Policy", response)
+        csp = response["Content-Security-Policy"]
         self.assertIn("default-src 'self'", csp)
         self.assertIn("frame-ancestors 'none'", csp)
