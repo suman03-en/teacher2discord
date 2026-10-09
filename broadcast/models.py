@@ -10,7 +10,7 @@ from .fields import EncryptedTextField
 class RateLimit(models.Model):
     key = models.CharField(max_length=255, unique=True, db_index=True)
     count = models.IntegerField(default=0)
-    reset_at = models.DateTimeField()
+    reset_at = models.DateTimeField(db_index=True)
 
     def __str__(self):
         return f"{self.key} ({self.count})"
@@ -33,7 +33,7 @@ class LoginToken(models.Model):
     used = models.BooleanField(default=False)
 
     class Meta:
-        indexes = [
+        indexes = [  # noqa: RUF012
             models.Index(fields=['email']),
             models.Index(fields=['expires_at', 'used']),
         ]
@@ -55,7 +55,7 @@ class Folder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ['name']  # noqa: RUF012
 
     def __str__(self):
         return self.name
@@ -106,8 +106,8 @@ class SentMessage(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-sent_at']
-        indexes = [
+        ordering = ['-sent_at']  # noqa: RUF012
+        indexes = [  # noqa: RUF012
             models.Index(fields=['channel', '-sent_at']),
         ]
 
