@@ -4,8 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Teacher2Discord — Send announcements directly to your students' Discord channels.">
+    <!-- SEO Meta Tags -->
     <title>{% block title %}Teacher2Discord{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}A simple, passwordless platform that bridges the gap between classrooms and Discord. Organize classes, generate secure invite links, and broadcast announcements and files directly to students' Discord webhooks.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}Teacher2Discord, Discord for Education, Classroom Discord, Teacher Tools, Webhook Broadcasting, EdTech, Discord Announcements{% endblock %}">
+    <meta name="author" content="Teacher2Discord">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    <meta property="og:title" content="{% block og_title %}Teacher2Discord - Broadcast to your classroom{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}A simple, passwordless platform that bridges the gap between classrooms and Discord. Broadcast announcements and files directly to your students' Discord webhooks.{% endblock %}">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'broadcast/images/main_logo.png' %}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    <meta property="twitter:title" content="{% block twitter_title %}Teacher2Discord - Broadcast to your classroom{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}A simple, passwordless platform that bridges the gap between classrooms and Discord.{% endblock %}">
+    <meta property="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'broadcast/images/main_logo.png' %}">
     <link rel="icon" href="{% static 'broadcast/images/favicon.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
