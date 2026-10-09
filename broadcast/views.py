@@ -10,7 +10,7 @@ import logging
 from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
@@ -29,7 +29,7 @@ from .forms import (
     StudentConnectForm,
     StudentLinkForm,
 )
-from .models import LoginToken, StudentLink, Teacher
+from .models import LoginToken, StudentLink
 from .services import (
     check_webhook_duplicate,
     connect_student_webhook,
@@ -167,9 +167,10 @@ def dashboard(request):
 @rate_limit(key_prefix='folder_detail', limit=30, period=60, post_only=True)
 def folder_detail(request, folder_id):
     """View a folder: shows subfolders, student links, channels, and forms."""
-    folder = request.teacher.folders.select_related(
-        BREADCRUMB_SELECT_RELATED,
-    ).get(pk=folder_id)
+    folder = get_object_or_404(
+        request.teacher.folders.select_related(BREADCRUMB_SELECT_RELATED),
+        pk=folder_id,
+    )
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -197,7 +198,8 @@ def folder_detail(request, folder_id):
 
     # Querysets only evaluated for GET (or invalid POST that falls through)
     subfolders = folder.children.all()
-    student_links = folder.student_links.all()
+    student_links_qs = folder.student_links.all()
+    student_links = paginate_queryset(student_links_qs, page_number=request.GET.get('page', 1))
     folder_form = FolderForm()
     link_form = StudentLinkForm()
 
@@ -205,6 +207,7 @@ def folder_detail(request, folder_id):
         'folder': folder,
         'subfolders': subfolders,
         'student_links': student_links,
+        'page_obj': student_links,
         'folder_form': folder_form,
         'link_form': link_form,
         'breadcrumbs': build_breadcrumbs(folder),
@@ -215,9 +218,10 @@ def folder_detail(request, folder_id):
 @rate_limit(key_prefix='link_detail', limit=20, period=60, post_only=True)
 def link_detail(request, link_id, slug=None):
     """View a single student link — send messages, see history."""
-    link = StudentLink.objects.select_related(
-        f'folder__{BREADCRUMB_SELECT_RELATED}',
-    ).prefetch_related('channels').get(
+    link = get_object_or_404(
+        StudentLink.objects.select_related(
+            f'folder__{BREADCRUMB_SELECT_RELATED}',
+        ).prefetch_related('channels'),
         pk=link_id, folder__teacher=request.teacher,
     )
     if slug != link.slug:
@@ -273,7 +277,8 @@ def link_detail(request, link_id, slug=None):
 @rate_limit(key_prefix='link_messages', limit=60, period=60, post_only=False)
 def link_messages(request, link_id):
     """Returns paginated message items as HTML fragments for AJAX loading."""
-    link = StudentLink.objects.select_related('folder').get(
+    link = get_object_or_404(
+        StudentLink.objects.select_related('folder'),
         pk=link_id, folder__teacher=request.teacher,
     )
     channel = link.channels.first()
