@@ -1,9 +1,12 @@
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
+
 import httpx
 
 logger = logging.getLogger(__name__)
+
+_shared_client = httpx.Client(timeout=60.0)
 
 
 class Webhook:
@@ -12,9 +15,9 @@ class Webhook:
     def __init__(self, name: str, url: str) -> None:
         self.name = name
         self.url = url
-        self.client = httpx.Client(timeout=60.0)
+        self.client = _shared_client
 
-    def send_message(self, message: Dict[str, Any], files: Optional[Dict[str, Any]] = None) -> bool:
+    def send_message(self, message: dict[str, Any], files: dict[str, Any] | None = None) -> bool:
         """Posts a JSON message to the webhook. Returns True on success."""
         try:
             if files:
@@ -40,8 +43,7 @@ class Webhook:
             return False
 
     def close(self) -> None:
-        """Closes the underlying HTTP client."""
-        self.client.close()
+        """No-op since the client is shared."""
 
     def __enter__(self):
         return self
