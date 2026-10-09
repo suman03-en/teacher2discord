@@ -4,20 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0002_studentlink_used'),
+        ("broadcast", "0002_studentlink_used"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='channel',
-            name='student_name',
+            model_name="channel",
+            name="student_name",
         ),
         migrations.AddField(
-            model_name='studentlink',
-            name='student_name',
-            field=models.CharField(default='', help_text="Student's name set by the teacher", max_length=255),
+            model_name="studentlink",
+            name="student_name",
+            field=models.CharField(
+                default="",
+                help_text="Student's name set by the teacher",
+                max_length=255,
+            ),
             preserve_default=False,
         ),
     ]

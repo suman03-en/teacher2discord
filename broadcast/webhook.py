@@ -17,7 +17,9 @@ class Webhook:
         self.url = url
         self.client = _shared_client
 
-    def send_message(self, message: dict[str, Any], files: dict[str, Any] | None = None) -> bool:
+    def send_message(
+        self, message: dict[str, Any], files: dict[str, Any] | None = None
+    ) -> bool:
         """Posts a JSON message to the webhook. Returns True on success."""
         try:
             if files:
@@ -28,7 +30,12 @@ class Webhook:
 
             if response.is_success:
                 return True
-            logger.warning("Webhook '%s' returned %s: %s", self.name, response.status_code, response.text)
+            logger.warning(
+                "Webhook '%s' returned %s: %s",
+                self.name,
+                response.status_code,
+                response.text,
+            )
             return False
         except httpx.HTTPError as e:
             logger.error("Failed to send webhook '%s': %s", self.name, e)

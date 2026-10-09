@@ -1,0 +1,24 @@
+[project]
+name = "teacher2discord"
+version = "0.1.0"
+description = "Teacher to Discord Bridge"
+requires-python = ">=3.10"
+
+[tool.ruff]
+# Enable standard Django configuration and some basic rules
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "C90", # mccabe
+]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

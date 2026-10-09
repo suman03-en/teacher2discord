@@ -17,7 +17,7 @@ MESSAGES_PER_PAGE = 10
 _MAX_BREADCRUMB_DEPTH = 6
 
 # Precomputed lookup chain for select_related (e.g. "parent__parent__parent…")
-BREADCRUMB_SELECT_RELATED = '__'.join(['parent'] * _MAX_BREADCRUMB_DEPTH)
+BREADCRUMB_SELECT_RELATED = "__".join(["parent"] * _MAX_BREADCRUMB_DEPTH)
 
 
 def build_breadcrumbs(node):
@@ -56,12 +56,12 @@ def get_client_ip(request):
     added by our own outermost trusted proxy — counted from the right —
     using ``settings.TRUSTED_PROXY_COUNT`` (0 = not behind a proxy).
     """
-    proxy_count = getattr(settings, 'TRUSTED_PROXY_COUNT', 1)
-    ip = request.META.get('REMOTE_ADDR')
+    proxy_count = getattr(settings, "TRUSTED_PROXY_COUNT", 1)
+    ip = request.META.get("REMOTE_ADDR")
 
-    forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if proxy_count > 0 and forwarded:
-        parts = [p.strip() for p in forwarded.split(',') if p.strip()]
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
         if parts:
             ip = parts[-min(proxy_count, len(parts))]
 

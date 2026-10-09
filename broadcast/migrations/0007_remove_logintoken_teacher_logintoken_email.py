@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0006_sentmessage'),
+        ("broadcast", "0006_sentmessage"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='logintoken',
-            name='teacher',
+            model_name="logintoken",
+            name="teacher",
         ),
         migrations.AddField(
-            model_name='logintoken',
-            name='email',
-            field=models.EmailField(default='unknown@example.com', max_length=254),
+            model_name="logintoken",
+            name="email",
+            field=models.EmailField(default="unknown@example.com", max_length=254),
         ),
     ]

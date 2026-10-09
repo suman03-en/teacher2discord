@@ -7,7 +7,6 @@ Covers services, decorators, crypto utilities, views, and models.
 import hashlib
 import uuid
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.test import RequestFactory, TestCase, override_settings
@@ -21,13 +20,11 @@ from .exceptions import (
     TokenExpiredError,
     WebhookDuplicateError,
 )
-from .forms import SendMessageForm, StudentConnectForm
 from .models import (
     Channel,
     Folder,
     LoginToken,
     RateLimit,
-    SentMessage,
     StudentLink,
     Teacher,
 )
@@ -44,7 +41,6 @@ from .services import (
 )
 from .utils import build_breadcrumbs
 
-
 # ---------------------------------------------------------------------------
 # Crypto tests
 # ---------------------------------------------------------------------------
@@ -58,7 +54,8 @@ class CryptoTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Generate a valid Fernet key for tests
-        import base64, secrets
+        import base64
+        import secrets
 
         cls.fernet_key = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
 
@@ -165,7 +162,8 @@ class ChannelModelTests(TestCase):
 
     @override_settings()
     def test_webhook_url_hash_auto_populated(self):
-        import base64, secrets
+        import base64
+        import secrets
 
         settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
             secrets.token_bytes(32)
@@ -288,7 +286,8 @@ class WebhookDuplicateTests(TestCase):
 
     @override_settings()
     def test_check_webhook_duplicate_no_duplicate(self):
-        import base64, secrets
+        import base64
+        import secrets
 
         settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
             secrets.token_bytes(32)
@@ -298,7 +297,8 @@ class WebhookDuplicateTests(TestCase):
 
     @override_settings()
     def test_check_webhook_duplicate_raises(self):
-        import base64, secrets
+        import base64
+        import secrets
 
         settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
             secrets.token_bytes(32)
@@ -319,7 +319,8 @@ class ConnectStudentWebhookTests(TestCase):
 
     @override_settings()
     def test_connect_success(self):
-        import base64, secrets
+        import base64
+        import secrets
 
         settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
             secrets.token_bytes(32)
@@ -335,7 +336,8 @@ class ConnectStudentWebhookTests(TestCase):
 
     @override_settings()
     def test_connect_already_used_raises(self):
-        import base64, secrets
+        import base64
+        import secrets
 
         settings.FIELD_ENCRYPTION_KEY = base64.urlsafe_b64encode(
             secrets.token_bytes(32)

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0011_logintoken_indexes_channel_encryption'),
+        ("broadcast", "0011_logintoken_indexes_channel_encryption"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='ratelimit',
-            name='reset_at',
+            model_name="ratelimit",
+            name="reset_at",
             field=models.DateTimeField(db_index=True),
         ),
     ]

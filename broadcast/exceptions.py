@@ -20,6 +20,7 @@ class BroadcastError(Exception):
 # Email (Brevo API) errors
 # ---------------------------------------------------------------------------
 
+
 class EmailError(BroadcastError):
     """Base class for all email-related failures."""
 
@@ -31,8 +32,7 @@ class EmailConfigurationError(EmailError):
         super().__init__(
             message or "Email backend is not configured correctly.",
             user_message=(
-                "Email service is not configured. "
-                "Please contact the administrator."
+                "Email service is not configured. Please contact the administrator."
             ),
         )
 
@@ -103,6 +103,7 @@ class EmailDeliveryError(EmailError):
 # Token / auth errors
 # ---------------------------------------------------------------------------
 
+
 class TokenError(BroadcastError):
     """Base class for login-token problems."""
 
@@ -131,6 +132,7 @@ class TokenAlreadyUsedError(TokenError):
 # Discord / webhook errors
 # ---------------------------------------------------------------------------
 
+
 class DiscordError(BroadcastError):
     """Base class for Discord webhook failures."""
 
@@ -158,6 +160,7 @@ class WebhookDuplicateError(DiscordError):
 # ---------------------------------------------------------------------------
 # Student-link errors
 # ---------------------------------------------------------------------------
+
 
 class StudentLinkError(BroadcastError):
     """Base class for student-link problems."""

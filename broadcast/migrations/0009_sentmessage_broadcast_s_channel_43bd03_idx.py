@@ -4,14 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0008_alter_logintoken_email'),
+        ("broadcast", "0008_alter_logintoken_email"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='sentmessage',
-            index=models.Index(fields=['channel', '-sent_at'], name='broadcast_s_channel_43bd03_idx'),
+            model_name="sentmessage",
+            index=models.Index(
+                fields=["channel", "-sent_at"], name="broadcast_s_channel_43bd03_idx"
+            ),
         ),
     ]

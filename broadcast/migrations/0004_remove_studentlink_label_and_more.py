@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0003_remove_channel_student_name_studentlink_student_name'),
+        ("broadcast", "0003_remove_channel_student_name_studentlink_student_name"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='studentlink',
-            name='label',
+            model_name="studentlink",
+            name="label",
         ),
         migrations.AlterField(
-            model_name='studentlink',
-            name='student_name',
+            model_name="studentlink",
+            name="student_name",
             field=models.CharField(max_length=255),
         ),
     ]

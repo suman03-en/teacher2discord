@@ -16,7 +16,6 @@ class RateLimit(models.Model):
         return f"{self.key} ({self.count})"
 
 
-
 class Teacher(models.Model):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -34,8 +33,8 @@ class LoginToken(models.Model):
 
     class Meta:
         indexes = [  # noqa: RUF012
-            models.Index(fields=['email']),
-            models.Index(fields=['expires_at', 'used']),
+            models.Index(fields=["email"]),
+            models.Index(fields=["expires_at", "used"]),
         ]
 
     def is_valid(self):
@@ -46,23 +45,26 @@ class LoginToken(models.Model):
 
 
 class Folder(models.Model):
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='folders')
+    teacher = models.ForeignKey(
+        Teacher, on_delete=models.CASCADE, related_name="folders"
+    )
     name = models.CharField(max_length=255)
     parent = models.ForeignKey(
-        'self', null=True, blank=True,
-        on_delete=models.CASCADE, related_name='children'
+        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="children"
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['name']  # noqa: RUF012
+        ordering = ["name"]  # noqa: RUF012
 
     def __str__(self):
         return self.name
 
 
 class StudentLink(models.Model):
-    folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='student_links')
+    folder = models.ForeignKey(
+        Folder, on_delete=models.CASCADE, related_name="student_links"
+    )
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     channel_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,14 +79,16 @@ class StudentLink(models.Model):
 
 
 class Channel(models.Model):
-    student_link = models.ForeignKey(StudentLink, on_delete=models.CASCADE, related_name='channels')
+    student_link = models.ForeignKey(
+        StudentLink, on_delete=models.CASCADE, related_name="channels"
+    )
     webhook_url = EncryptedTextField()
     webhook_url_hash = models.CharField(
         max_length=64,
         db_index=True,
         blank=True,
-        default='',
-        help_text='SHA-256 hash for indexed duplicate lookups.',
+        default="",
+        help_text="SHA-256 hash for indexed duplicate lookups.",
     )
     connected_at = models.DateTimeField(auto_now_add=True)
 
@@ -92,6 +96,7 @@ class Channel(models.Model):
         # Auto-populate the hash whenever webhook_url is set.
         if self.webhook_url:
             from .crypto import hash_value
+
             self.webhook_url_hash = hash_value(self.webhook_url)
         super().save(**kwargs)
 
@@ -100,15 +105,17 @@ class Channel(models.Model):
 
 
 class SentMessage(models.Model):
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='messages')
+    channel = models.ForeignKey(
+        Channel, on_delete=models.CASCADE, related_name="messages"
+    )
     content = models.TextField(blank=True)
     attachment_name = models.CharField(max_length=255, blank=True)
     sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-sent_at']  # noqa: RUF012
+        ordering = ["-sent_at"]  # noqa: RUF012
         indexes = [  # noqa: RUF012
-            models.Index(fields=['channel', '-sent_at']),
+            models.Index(fields=["channel", "-sent_at"]),
         ]
 
     def __str__(self):

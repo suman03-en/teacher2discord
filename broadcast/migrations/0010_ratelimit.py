@@ -4,19 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0009_sentmessage_broadcast_s_channel_43bd03_idx'),
+        ("broadcast", "0009_sentmessage_broadcast_s_channel_43bd03_idx"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RateLimit',
+            name="RateLimit",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('key', models.CharField(db_index=True, max_length=255, unique=True)),
-                ('count', models.IntegerField(default=0)),
-                ('reset_at', models.DateTimeField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("key", models.CharField(db_index=True, max_length=255, unique=True)),
+                ("count", models.IntegerField(default=0)),
+                ("reset_at", models.DateTimeField()),
             ],
         ),
     ]

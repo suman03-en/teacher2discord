@@ -6,13 +6,13 @@ from broadcast.models import LoginToken
 
 
 class Command(BaseCommand):
-    help = 'Remove expired and used login tokens to keep the database clean.'
+    help = "Remove expired and used login tokens to keep the database clean."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Show how many tokens would be deleted without actually deleting them.',
+            "--dry-run",
+            action="store_true",
+            help="Show how many tokens would be deleted without actually deleting them.",
         )
 
     def handle(self, *args, **options):
@@ -21,8 +21,10 @@ class Command(BaseCommand):
         )
         count = stale.count()
 
-        if options['dry_run']:
+        if options["dry_run"]:
             self.stdout.write(f"Would delete {count} expired/used token(s).")
         else:
             stale.delete()
-            self.stdout.write(self.style.SUCCESS(f"Deleted {count} expired/used token(s)."))
+            self.stdout.write(
+                self.style.SUCCESS(f"Deleted {count} expired/used token(s).")
+            )

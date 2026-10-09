@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0004_remove_studentlink_label_and_more'),
+        ("broadcast", "0004_remove_studentlink_label_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='studentlink',
-            old_name='student_name',
-            new_name='channel_name',
+            model_name="studentlink",
+            old_name="student_name",
+            new_name="channel_name",
         ),
     ]

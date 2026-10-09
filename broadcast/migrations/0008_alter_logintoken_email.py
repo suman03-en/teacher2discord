@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('broadcast', '0007_remove_logintoken_teacher_logintoken_email'),
+        ("broadcast", "0007_remove_logintoken_teacher_logintoken_email"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='logintoken',
-            name='email',
+            model_name="logintoken",
+            name="email",
             field=models.EmailField(max_length=254),
         ),
     ]
