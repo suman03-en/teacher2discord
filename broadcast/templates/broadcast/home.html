@@ -4,21 +4,226 @@
 {% block title %}Teacher2Discord - Broadcast to your classroom{% endblock %}
 
 {% block content %}
-<div style="text-align: center; padding: 4rem 1rem; max-width: 600px; margin: 0 auto;">
+<style>
+    .hero {
+        text-align: center;
+        padding: 5rem 1rem 3rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+    }
+    .hero-subtitle {
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 4rem;
+    }
+    .features-section {
+        max-width: 1000px;
+        margin: 0 auto 5rem;
+        padding: 0 1.5rem;
+    }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+    .feature-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 2rem;
+        text-align: left;
+        transition: transform var(--transition), border-color var(--transition);
+    }
+    .feature-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--border-glow);
+    }
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--accent);
+    }
+    .feature-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+    .feature-text {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .steps-section {
+        max-width: 800px;
+        margin: 0 auto 5rem;
+        padding: 0 1.5rem;
+    }
+    .section-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 3rem;
+    }
+    .step-item {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        background: var(--bg-secondary);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        align-items: center;
+    }
+    .step-number {
+        background: var(--accent-subtle);
+        color: var(--accent);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        border: 1px solid var(--info-border);
+    }
+    .step-content h3 {
+        margin-bottom: 0.25rem;
+        font-size: 1.15rem;
+    }
+    .step-content p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+    .hero-logo {
+        max-width: 100%; 
+        max-height: 120px; 
+        margin-bottom: 1rem; 
+        width: auto; 
+        height: auto;
+    }
+    
+    @media (max-width: 600px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        .step-item {
+            flex-direction: column;
+            text-align: center;
+            align-items: center;
+        }
+    }
+    
+    .scroll-indicator {
+        margin-top: 2rem;
+        display: inline-block;
+        color: var(--text-muted);
+        animation: bounce 2s infinite;
+        transition: color var(--transition);
+    }
+    .scroll-indicator:hover {
+        color: var(--accent);
+    }
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
+    }
+</style>
+
+<div class="hero">
     <img src="{% static 'broadcast/images/main_logo.png' %}" alt="Teacher2Discord Logo"
-        style="max-width: 100%; max-height: 200px; margin-bottom: 2rem;">
-    <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2.5rem; line-height: 1.6;">
-        A simple, passwordless platform that bridges the gap between classrooms and Discord.
-        Organize your classes, generate secure invite links, and broadcast announcements and files directly to your
-        students' Discord webhooks from one unified dashboard.
+        width="677" height="369" class="hero-logo">
+    <h1 class="hero-title">Bridge your classroom and Discord</h1>
+    <p class="hero-subtitle">
+        A minimal, secure, and hassle-free platform for educators. Send announcements and files directly to your students' Discord channels instantly.
     </p>
 
-    {% if request.session.teacher_id %}
-    <a href="{% url 'dashboard' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Go to
-        Dashboard</a>
-    {% else %}
-    <a href="{% url 'login' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Teacher
-        Login</a>
-    {% endif %}
+    <div class="hero-actions">
+        {% if request.session.teacher_id %}
+        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2.5rem;">Go to Dashboard</a>
+        {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 2.5rem;">Teacher Login</a>
+        {% endif %}
+    </div>
+    
+    <a href="#features" class="scroll-indicator" aria-label="Scroll down">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+    </a>
+</div>
+
+<div id="features" class="features-section">
+    <h2 class="section-title">Why Teacher2Discord?</h2>
+    <div class="features-grid">
+    <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3 class="feature-title">Bank-Grade Security</h3>
+        <p class="feature-text">Passwordless magic links keep your account safe. Webhooks are heavily encrypted in our database, ensuring no one else can misuse your endpoints.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">Hassle-Free Broadcasting</h3>
+        <p class="feature-text">No bots to invite, no complex server setups. Just a simple webhook integration that works seamlessly in seconds. Send to multiple classes simultaneously.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h3 class="feature-title">Student Friendly</h3>
+        <p class="feature-text">Students simply click your secure invite link and paste a webhook from their personal or group server. No accounts required for students.</p>
+    </div>
+    </div>
+</div>
+
+<div class="steps-section">
+    <h2 class="section-title">How It Works</h2>
+    
+    <div class="step-item">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h3>Create a Folder</h3>
+            <p>Log in password-free and create a folder for your class or project.</p>
+        </div>
+    </div>
+    
+    <div class="step-item">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h3>Share the Invite Link</h3>
+            <p>Generate a secure, expiring invite link for your students. Students use this link to securely submit their Discord channel's webhook.</p>
+        </div>
+    </div>
+    
+    <div class="step-item">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h3>Broadcast Instantly</h3>
+            <p>Write your announcement, attach files, and hit send. Teacher2Discord delivers your message to all connected student channels instantly.</p>
+        </div>
+    </div>
 </div>
 {% endblock %}
