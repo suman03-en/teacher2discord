@@ -1,86 +1,147 @@
 from datetime import timedelta
+
 from django.contrib import admin
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Channel, Folder, LoginToken, RateLimit, SentMessage, StudentLink, Teacher
+from .models import (
+    Channel,
+    Folder,
+    LoginToken,
+    RateLimit,
+    SentMessage,
+    StudentLink,
+    Teacher,
+)
 
 
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
-    list_display = ('email', 'created_at')
-    search_fields = ('email',)
-    readonly_fields = ('created_at',)
+    list_display = ("email", "created_at")
+    search_fields = ("email",)
+    readonly_fields = ("created_at",)
     show_full_result_count = False
 
 
 @admin.register(LoginToken)
 class LoginTokenAdmin(admin.ModelAdmin):
-    list_display = ('email', 'token', 'created_at', 'expires_at', 'used')
-    list_filter = ('used',)
-    search_fields = ('email',)
-    readonly_fields = ('token', 'created_at')
+    list_display = ("email", "token", "created_at", "expires_at", "used")
+    list_filter = ("used",)
+    search_fields = ("email",)
+    readonly_fields = ("token", "created_at")
     show_full_result_count = False
 
     def get_urls(self):
         from django.urls import path
+
         urls = super().get_urls()
         custom_urls = [
-            path('cleanup-stale/', self.admin_site.admin_view(self.cleanup_stale_view), name='logintoken-cleanup'),
+            path(
+                "cleanup-stale/",
+                self.admin_site.admin_view(self.cleanup_stale_view),
+                name="logintoken-cleanup",
+            ),
         ]
         return custom_urls + urls
 
     def cleanup_stale_view(self, request):
         from django.shortcuts import redirect
-        stale = LoginToken.objects.filter(Q(used=True) | Q(expires_at__lt=timezone.now()))
-        count, _ = stale.delete()
-        self.message_user(request, f"Successfully deleted {count} stale login tokens.")
-        return redirect('..')
+
+        if request.method == "POST":
+            stale = LoginToken.objects.filter(
+                Q(used=True) | Q(expires_at__lt=timezone.now())
+            )
+            count, _ = stale.delete()
+            self.message_user(
+                request, f"Successfully deleted {count} stale login tokens."
+            )
+            return redirect("..")
+
+        from django.http import HttpResponse
+        from django.middleware.csrf import get_token
+
+        csrf_token = get_token(request)
+        return HttpResponse(f'''
+            <html><body>
+                <h2>Confirm Deletion</h2>
+                <p>Are you sure you want to delete all stale login tokens?</p>
+                <form method="post">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <button type="submit">Yes, delete them</button>
+                    <a href="..">Cancel</a>
+                </form>
+            </body></html>
+        ''')
 
 
 @admin.register(Folder)
 class FolderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'teacher', 'parent', 'created_at')
-    list_filter = ('teacher',)
-    search_fields = ('name', 'teacher__email')
-    readonly_fields = ('created_at',)
+    list_display = ("name", "teacher", "parent", "created_at")
+    list_filter = ("teacher",)
+    search_fields = ("name", "teacher__email")
+    readonly_fields = ("created_at",)
     show_full_result_count = False
 
 
 @admin.register(StudentLink)
 class StudentLinkAdmin(admin.ModelAdmin):
-    list_display = ('channel_name', 'folder', 'used', 'created_at')
-    list_filter = ('used',)
-    search_fields = ('channel_name', 'folder__name')
-    readonly_fields = ('token', 'created_at')
+    list_display = ("channel_name", "folder", "used", "created_at")
+    list_filter = ("used",)
+    search_fields = ("channel_name", "folder__name")
+    readonly_fields = ("token", "created_at")
     show_full_result_count = False
 
     def get_urls(self):
         from django.urls import path
+
         urls = super().get_urls()
         custom_urls = [
-            path('cleanup-stale/', self.admin_site.admin_view(self.cleanup_stale_view), name='studentlink-cleanup'),
+            path(
+                "cleanup-stale/",
+                self.admin_site.admin_view(self.cleanup_stale_view),
+                name="studentlink-cleanup",
+            ),
         ]
         return custom_urls + urls
 
     def cleanup_stale_view(self, request):
         from django.shortcuts import redirect
-        threshold = timezone.now() - timedelta(days=30)
-        stale = StudentLink.objects.filter(used=False, created_at__lt=threshold)
-        count, _ = stale.delete()
-        self.message_user(request, f"Successfully deleted {count} stale student links.")
-        return redirect('..')
+
+        if request.method == "POST":
+            threshold = timezone.now() - timedelta(days=30)
+            stale = StudentLink.objects.filter(used=False, created_at__lt=threshold)
+            count, _ = stale.delete()
+            self.message_user(
+                request, f"Successfully deleted {count} stale student links."
+            )
+            return redirect("..")
+
+        from django.http import HttpResponse
+        from django.middleware.csrf import get_token
+
+        csrf_token = get_token(request)
+        return HttpResponse(f'''
+            <html><body>
+                <h2>Confirm Deletion</h2>
+                <p>Are you sure you want to delete all stale student links?</p>
+                <form method="post">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                    <button type="submit">Yes, delete them</button>
+                    <a href="..">Cancel</a>
+                </form>
+            </body></html>
+        ''')
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('folder')
+        return super().get_queryset(request).select_related("folder")
 
 
 @admin.register(Channel)
 class ChannelAdmin(admin.ModelAdmin):
-    list_display = ('student_link', 'connected_at')
-    search_fields = ('student_link__channel_name',)
-    readonly_fields = ('connected_at', 'webhook_url_hash')
-    exclude = ('webhook_url',)  # Don't display decrypted webhook in admin
+    list_display = ("student_link", "connected_at")
+    search_fields = ("student_link__channel_name",)
+    readonly_fields = ("connected_at", "webhook_url_hash")
+    exclude = ("webhook_url",)  # Don't display decrypted webhook in admin
     show_full_result_count = False
 
     def get_queryset(self, request):
@@ -88,15 +149,15 @@ class ChannelAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related('student_link', 'student_link__folder')
+            .select_related("student_link", "student_link__folder")
         )
 
 
 @admin.register(SentMessage)
 class SentMessageAdmin(admin.ModelAdmin):
-    list_display = ('channel', 'content_preview', 'attachment_name', 'sent_at')
-    search_fields = ('content', 'channel__student_link__channel_name')
-    readonly_fields = ('sent_at',)
+    list_display = ("channel", "content_preview", "attachment_name", "sent_at")
+    search_fields = ("content", "channel__student_link__channel_name")
+    readonly_fields = ("sent_at",)
     show_full_result_count = False
 
     def get_queryset(self, request):
@@ -104,19 +165,20 @@ class SentMessageAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related('channel', 'channel__student_link')
+            .select_related("channel", "channel__student_link")
         )
 
-    @admin.display(description='Content')
+    @admin.display(description="Content")
     def content_preview(self, obj):
-        return obj.content[:60] + '…' if len(obj.content) > 60 else obj.content
+        return obj.content[:60] + "…" if len(obj.content) > 60 else obj.content
 
 
 @admin.register(RateLimit)
 class RateLimitAdmin(admin.ModelAdmin):
     """Expose rate-limit records for debugging and manual cleanup."""
-    list_display = ('key', 'count', 'reset_at')
-    search_fields = ('key',)
-    list_filter = ('reset_at',)
-    readonly_fields = ('key',)
+
+    list_display = ("key", "count", "reset_at")
+    search_fields = ("key",)
+    list_filter = ("reset_at",)
+    readonly_fields = ("key",)
     show_full_result_count = False
