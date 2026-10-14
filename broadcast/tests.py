@@ -5,10 +5,15 @@ Covers services, decorators, crypto utilities, views, and models.
 """
 
 import hashlib
+import json
+import os
 import uuid
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 
@@ -708,5 +713,185 @@ class AttachmentTemplateTests(TestCase):
         self.assertIn("attachment-file-card", html)
         self.assertNotIn("file-download", html)
         self.assertIn("old_note.txt", html)
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class MessageAttachmentViewTests(TestCase):
+    def setUp(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.teacher = Teacher.objects.create(email="owner@example.com")
+        self.folder = Folder.objects.create(teacher=self.teacher, name="Math")
+        self.student_link = StudentLink.objects.create(
+            folder=self.folder, channel_name="General"
+        )
+        self.channel = Channel.objects.create(
+            student_link=self.student_link,
+            webhook_url="https://discord.com/api/webhooks/789/xyz",
+        )
+        self.msg = SentMessage.objects.create(
+            channel=self.channel,
+            content="Homework",
+            attachment_name="syllabus.pdf",
+            attachment_file=SimpleUploadedFile(
+                "syllabus.pdf", b"%PDF-1.4 test data", content_type="application/pdf"
+            ),
+        )
+
+    def test_message_attachment_requires_login(self):
+        response = self.client.get(f"/messages/{self.msg.pk}/attachment/")
+        self.assertEqual(response.status_code, 302)
+
+    def test_message_attachment_serves_inline(self):
+        session = self.client.session
+        session["teacher_id"] = self.teacher.pk
+        session.save()
+
+        response = self.client.get(f"/messages/{self.msg.pk}/attachment/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn('inline; filename="syllabus.pdf"', response["Content-Disposition"])
+        self.assertEqual(b"".join(response.streaming_content), b"%PDF-1.4 test data")
+
+    def test_message_attachment_download_mode(self):
+        session = self.client.session
+        session["teacher_id"] = self.teacher.pk
+        session.save()
+
+        response = self.client.get(f"/messages/{self.msg.pk}/attachment/?download=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment; filename="syllabus.pdf"', response["Content-Disposition"])
+
+    def test_message_attachment_denies_other_teacher(self):
+        other_teacher = Teacher.objects.create(email="other@example.com")
+        session = self.client.session
+        session["teacher_id"] = other_teacher.pk
+        session.save()
+
+        response = self.client.get(f"/messages/{self.msg.pk}/attachment/")
+        self.assertEqual(response.status_code, 404)
+
+
+# ---------------------------------------------------------------------------
+# Analytics & Admin Dashboard Tests
+# ---------------------------------------------------------------------------
+
+
+class AnalyticsDashboardTests(TestCase):
+    """Tests for broadcast.analytics and custom admin dashboard index."""
+
+    def setUp(self):
+        cache.clear()
+        self.superuser = User.objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="adminpassword123",
+        )
+
+    def test_get_brevo_stats_unconfigured(self):
+        from .analytics import get_brevo_stats
+
+        with override_settings(ANYMAIL={}):
+            stats = get_brevo_stats(force_refresh=True)
+            self.assertFalse(stats["configured"])
+            self.assertIn("error", stats)
+
+    @patch("urllib.request.urlopen")
+    def test_get_brevo_stats_success(self, mock_urlopen):
+        from .analytics import get_brevo_stats
+
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps({
+            "email": "teacher@example.com",
+            "plan": [{"type": "free", "credits": 250}],
+        }).encode("utf-8")
+        mock_response.__enter__.return_value = mock_response
+        mock_urlopen.return_value = mock_response
+
+        with override_settings(ANYMAIL={"BREVO_API_KEY": "dummy_key"}):
+            stats = get_brevo_stats(force_refresh=True)
+            self.assertTrue(stats["configured"])
+            self.assertEqual(stats["credits_remaining"], 250)
+            self.assertEqual(stats["credits_used"], 50)
+            self.assertEqual(stats["credits_total"], 300)
+            self.assertEqual(stats["email"], "teacher@example.com")
+
+    def test_get_cloudinary_stats_unconfigured(self):
+        from .analytics import get_cloudinary_stats
+
+        with patch.dict(os.environ, {}, clear=True):
+            stats = get_cloudinary_stats(force_refresh=True)
+            self.assertFalse(stats["configured"])
+
+    @patch("cloudinary.api.usage")
+    def test_get_cloudinary_stats_success(self, mock_usage):
+        from .analytics import get_cloudinary_stats
+
+        mock_usage.return_value = {
+            "plan": "Free",
+            "resources": 12,
+            "storage": {"usage": 5242880},  # 5 MB
+            "bandwidth": {"usage": 1048576},  # 1 MB
+            "credits": {"usage": 0.5, "limit": 25.0, "used_percent": 2.0},
+        }
+        with patch.dict(os.environ, {"CLOUDINARY_URL": "cloudinary://test"}):
+            stats = get_cloudinary_stats(force_refresh=True)
+            self.assertTrue(stats["configured"])
+            self.assertEqual(stats["total_resources"], 12)
+            self.assertEqual(stats["storage_mb"], 5.0)
+            self.assertEqual(stats["bandwidth_mb"], 1.0)
+
+    def test_get_system_analytics(self):
+        from .analytics import get_system_analytics
+
+        Teacher.objects.create(email="prof@example.com")
+        create_login_token(email="prof@example.com")
+
+        data = get_system_analytics(force_refresh=True)
+        self.assertIn("email", data)
+        self.assertIn("cloudinary", data)
+        self.assertIn("users", data)
+        self.assertEqual(data["users"]["admin_users"], 1)
+        self.assertEqual(data["users"]["teachers"], 1)
+        self.assertEqual(data["email"]["total_sent"], 1)
+
+    def test_admin_dashboard_renders_for_superuser(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "System Quotas &amp; Activity Dashboard")
+        self.assertContains(response, "Email &amp; Brevo Quota")
+        self.assertContains(response, "Cloudinary Media")
+        self.assertContains(response, "Users &amp; App Activity")
+        self.assertContains(response, "/admin/models/")
+
+    def test_admin_dashboard_refresh_param(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/?refresh=1")
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_models_view_renders_models(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/models/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Django Models &amp; Authentication Management")
+        self.assertContains(response, "Back to System Dashboard")
+        self.assertContains(response, "Authentication and Authorization")
+        self.assertContains(response, "Broadcast")
+
+    def test_admin_models_via_query_param(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/?view=models")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Django Models &amp; Authentication Management")
+        self.assertContains(response, "Back to System Dashboard")
+
+
+
 
 

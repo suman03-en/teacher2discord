@@ -1,0 +1,326 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'broadcast/css/admin_dashboard.css' %}">
+{% endblock %}
+
+{% block coltype %}{% if is_models_view %}colMS{% else %}colM{% endif %}{% endblock %}
+
+{% block sidebar %}{% if is_models_view %}{{ block.super }}{% endif %}{% endblock %}
+
+{% block content %}
+{% if is_models_view %}
+{# =================================================================== #}
+{# VIEW 2: STANDARD DJANGO MODELS & AUTHENTICATION                     #}
+{# =================================================================== #}
+<div class="models-nav-banner">
+    <div class="models-nav-left">
+        <a href="{% url 'admin:index' %}" class="btn-back-dashboard">
+            ← Back to System Dashboard
+        </a>
+        <div class="models-titles">
+            <h2 class="models-heading">📁 Django Models &amp; Authentication Management</h2>
+            <span class="models-subheading">Standard database tables, authorization groups, and model records</span>
+        </div>
+    </div>
+    <div class="models-nav-right">
+        <a href="{% url 'admin:index' %}?refresh=1" class="btn-stats-link">
+            📊 Live Quotas &amp; Analytics
+        </a>
+    </div>
+</div>
+
+{{ block.super }}
+
+{% else %}
+{# =================================================================== #}
+{# VIEW 1: STATS & QUOTAS DASHBOARD                                     #}
+{# =================================================================== #}
+{% if analytics %}
+<div class="analytics-dashboard">
+    {# Header with Title and Action Buttons #}
+    <div class="analytics-header">
+        <div class="analytics-title-group">
+            <h2 class="analytics-title">📊 System Quotas &amp; Activity Dashboard</h2>
+            <span class="analytics-subtitle">Real-time metrics for Brevo Email, Cloudinary Media Storage, and Admin Users</span>
+        </div>
+        <div class="analytics-actions">
+            <a href="?refresh=1" class="analytics-refresh-btn" title="Fetch latest live quotas from Brevo and Cloudinary">
+                ↻ Refresh Live Quotas
+            </a>
+        </div>
+    </div>
+
+    {# Top 3 Metric Cards Grid #}
+    <div class="analytics-grid">
+        {# Card 1: Brevo Email Quota #}
+        <div class="analytics-card card-email">
+            <div class="card-header">
+                <span class="card-icon">✉️</span>
+                <div>
+                    <h3 class="card-title">Email &amp; Brevo Quota</h3>
+                    <span class="card-badge badge-info">{{ analytics.email.brevo_plan }} Plan</span>
+                </div>
+            </div>
+            
+            {% if analytics.email.brevo_error %}
+            <div class="card-warning-box">
+                <small>⚠️ {{ analytics.email.brevo_error }}</small>
+            </div>
+            {% endif %}
+
+            <div class="metric-row">
+                <div class="metric-item">
+                    <span class="metric-value text-accent">{{ analytics.email.brevo_available }}</span>
+                    <span class="metric-label">Available Today</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value text-warning">{{ analytics.email.brevo_used }}</span>
+                    <span class="metric-label">Used Today</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">{{ analytics.email.brevo_total }}</span>
+                    <span class="metric-label">Daily Quota</span>
+                </div>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-label">
+                    <span>Daily Brevo Allowance Used</span>
+                    <span><strong>{{ analytics.email.brevo_percent }}%</strong></span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill {% if analytics.email.brevo_percent > 85 %}fill-danger{% elif analytics.email.brevo_percent > 65 %}fill-warning{% else %}fill-primary{% endif %}"
+                         data-progress="{{ analytics.email.brevo_percent|default:0 }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer-list">
+                <div class="footer-stat">
+                    <span>Total Magic Links Sent:</span>
+                    <strong>{{ analytics.email.total_sent }}</strong>
+                </div>
+                <div class="footer-stat">
+                    <span>Emails Sent Today:</span>
+                    <strong>{{ analytics.email.sent_today }}</strong>
+                </div>
+                {% if analytics.email.brevo_email %}
+                <div class="footer-stat text-muted">
+                    <span>Brevo Account:</span>
+                    <span class="mono-tag">{{ analytics.email.brevo_email }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Card 2: Cloudinary Media Storage #}
+        <div class="analytics-card card-cloudinary">
+            <div class="card-header">
+                <span class="card-icon">☁️</span>
+                <div>
+                    <h3 class="card-title">Cloudinary Media</h3>
+                    <span class="card-badge badge-success">{{ analytics.cloudinary.plan }} Tier</span>
+                </div>
+            </div>
+
+            {% if analytics.cloudinary.error %}
+            <div class="card-warning-box">
+                <small>⚠️ {{ analytics.cloudinary.error }}</small>
+            </div>
+            {% endif %}
+
+            <div class="metric-row">
+                <div class="metric-item">
+                    <span class="metric-value text-accent">{{ analytics.cloudinary.total_resources }}</span>
+                    <span class="metric-label">Total Assets</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">{{ analytics.cloudinary.storage_mb }} <small>MB</small></span>
+                    <span class="metric-label">Storage Used</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">{{ analytics.cloudinary.bandwidth_mb }} <small>MB</small></span>
+                    <span class="metric-label">Bandwidth</span>
+                </div>
+            </div>
+
+            <div class="breakdown-grid">
+                <div class="breakdown-pill">
+                    <span class="pill-icon">🖼️</span>
+                    <span class="pill-label">Images</span>
+                    <span class="pill-count">{{ analytics.cloudinary.image_count }}</span>
+                </div>
+                <div class="breakdown-pill">
+                    <span class="pill-icon">📄</span>
+                    <span class="pill-label">Documents</span>
+                    <span class="pill-count">{{ analytics.cloudinary.doc_count }}</span>
+                </div>
+                <div class="breakdown-pill">
+                    <span class="pill-icon">🎬</span>
+                    <span class="pill-label">Videos</span>
+                    <span class="pill-count">{{ analytics.cloudinary.video_count }}</span>
+                </div>
+            </div>
+
+            <div class="card-footer-list">
+                <div class="footer-stat">
+                    <span>Monthly Cloudinary Credits:</span>
+                    <strong>{{ analytics.cloudinary.credits_used }} / {{ analytics.cloudinary.credits_limit }}</strong>
+                </div>
+                <div class="footer-stat">
+                    <span>Messages with Files:</span>
+                    <strong>{{ analytics.cloudinary.total_db_files }}</strong>
+                </div>
+            </div>
+        </div>
+
+        {# Card 3: Users & System Activity #}
+        <div class="analytics-card card-users">
+            <div class="card-header">
+                <span class="card-icon">👥</span>
+                <div>
+                    <h3 class="card-title">Users &amp; App Activity</h3>
+                    <span class="card-badge badge-primary">Active</span>
+                </div>
+            </div>
+
+            <div class="metric-row">
+                <div class="metric-item">
+                    <span class="metric-value text-primary">{{ analytics.users.teachers }}</span>
+                    <span class="metric-label">Teachers</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">{{ analytics.users.admin_users }}</span>
+                    <span class="metric-label">Admin Users</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value text-accent">{{ analytics.users.channels }}</span>
+                    <span class="metric-label">Discord Channels</span>
+                </div>
+            </div>
+
+            <div class="card-footer-list card-footer-mt">
+                <div class="footer-stat">
+                    <span>Admin Superusers:</span>
+                    <strong>{{ analytics.users.superusers }}</strong>
+                </div>
+                <div class="footer-stat">
+                    <span>Student Connect Links:</span>
+                    <strong>{{ analytics.users.links }}</strong>
+                </div>
+                <div class="footer-stat">
+                    <span>Total Broadcast Messages:</span>
+                    <strong>{{ analytics.users.messages }}</strong>
+                </div>
+                <div class="footer-stat">
+                    <span>Teacher Folders:</span>
+                    <strong>{{ analytics.users.folders }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Bottom Hub: Models & Authentication Quick Navigation #}
+    <div class="analytics-hub">
+        <div class="hub-header">
+            <div>
+                <h3 class="hub-title">🗄️ Database Models &amp; Authentication Hub</h3>
+                <span class="hub-subtitle">Direct shortcuts to application models, or open the traditional Django administration page</span>
+            </div>
+            <a href="{% url 'admin:models-index' %}" class="hub-cta-btn">
+                Open Full Django Models &amp; Auth Page →
+            </a>
+        </div>
+
+        <div class="hub-grid">
+            <a href="{% url 'admin:broadcast_teacher_changelist' %}" class="hub-item">
+                <span class="hub-icon">👨‍🏫</span>
+                <div class="hub-details">
+                    <span class="hub-name">Teachers</span>
+                    <span class="hub-meta">{{ analytics.users.teachers }} registered</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_channel_changelist' %}" class="hub-item">
+                <span class="hub-icon">💬</span>
+                <div class="hub-details">
+                    <span class="hub-name">Discord Channels</span>
+                    <span class="hub-meta">{{ analytics.users.channels }} active</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_sentmessage_changelist' %}" class="hub-item">
+                <span class="hub-icon">✉️</span>
+                <div class="hub-details">
+                    <span class="hub-name">Sent Messages</span>
+                    <span class="hub-meta">{{ analytics.users.messages }} broadcasts</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_logintoken_changelist' %}" class="hub-item">
+                <span class="hub-icon">🔑</span>
+                <div class="hub-details">
+                    <span class="hub-name">Login Tokens</span>
+                    <span class="hub-meta">{{ analytics.email.total_sent }} generated</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:auth_user_changelist' %}" class="hub-item">
+                <span class="hub-icon">👤</span>
+                <div class="hub-details">
+                    <span class="hub-name">Admin Users</span>
+                    <span class="hub-meta">{{ analytics.users.admin_users }} accounts</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:auth_group_changelist' %}" class="hub-item">
+                <span class="hub-icon">👥</span>
+                <div class="hub-details">
+                    <span class="hub-name">Auth Groups</span>
+                    <span class="hub-meta">Roles &amp; permissions</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_studentlink_changelist' %}" class="hub-item">
+                <span class="hub-icon">🔗</span>
+                <div class="hub-details">
+                    <span class="hub-name">Student Links</span>
+                    <span class="hub-meta">{{ analytics.users.links }} links</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_folder_changelist' %}" class="hub-item">
+                <span class="hub-icon">📁</span>
+                <div class="hub-details">
+                    <span class="hub-name">Teacher Folders</span>
+                    <span class="hub-meta">{{ analytics.users.folders }} folders</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+            <a href="{% url 'admin:broadcast_ratelimit_changelist' %}" class="hub-item">
+                <span class="hub-icon">⏱️</span>
+                <div class="hub-details">
+                    <span class="hub-name">Rate Limits</span>
+                    <span class="hub-meta">Throttling rules</span>
+                </div>
+                <span class="hub-arrow">→</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var bars = document.querySelectorAll(".progress-bar-fill[data-progress]");
+    bars.forEach(function(bar) {
+        var pct = parseFloat(bar.getAttribute("data-progress")) || 0;
+        bar.style.width = Math.min(100, Math.max(0, pct)) + "%";
+    });
+});
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

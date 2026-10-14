@@ -182,3 +182,51 @@ class RateLimitAdmin(admin.ModelAdmin):
     list_filter = ("reset_at",)
     readonly_fields = ("key",)
     show_full_result_count = False
+
+
+# ---------------------------------------------------------------------------
+# Admin Index Analytics Dashboard Integration
+# ---------------------------------------------------------------------------
+
+from .analytics import get_system_analytics  # noqa: E402
+
+_original_admin_index = admin.site.index
+_original_admin_get_urls = admin.site.get_urls
+
+
+def admin_models_view(request, extra_context=None):
+    """View displaying standard Django models list, auth, and recent actions."""
+    extra_context = extra_context or {}
+    extra_context["is_models_view"] = True
+    extra_context["title"] = "Models & Authentication"
+    return _original_admin_index(request, extra_context=extra_context)
+
+
+def custom_admin_index(request, extra_context=None):
+    """Dashboard view displaying system stats, Brevo, Cloudinary, and model hub."""
+    if request.GET.get("view") == "models" or request.GET.get("models") == "1":
+        return admin_models_view(request, extra_context=extra_context)
+
+    extra_context = extra_context or {}
+    force_refresh = request.GET.get("refresh") == "1"
+    try:
+        extra_context["analytics"] = get_system_analytics(force_refresh=force_refresh)
+    except Exception as exc:
+        extra_context["analytics_error"] = str(exc)
+    extra_context["is_models_view"] = False
+    return _original_admin_index(request, extra_context=extra_context)
+
+
+def custom_admin_get_urls():
+    from django.urls import path
+
+    custom_urls = [
+        path("models/", admin.site.admin_view(admin_models_view), name="models-index"),
+    ]
+    return custom_urls + _original_admin_get_urls()
+
+
+admin.site.index = custom_admin_index
+admin.site.get_urls = custom_admin_get_urls
+
+

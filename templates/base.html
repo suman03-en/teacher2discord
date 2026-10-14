@@ -37,7 +37,7 @@
 <body>
     <header>
         <a href="{% if request.session.teacher_id %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}" class="brand">
-            <img src="{% static 'broadcast/images/favicon.png' %}" alt="Logo" class="nav-logo" style="height: 28px; width: auto; margin-right: 0.5rem; border-radius: 4px;">
+            <img src="{% static 'broadcast/images/favicon.png' %}" alt="Logo" class="nav-logo">
             Teacher<span>2</span>Discord
         </a>
         <nav>

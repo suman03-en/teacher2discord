@@ -11,7 +11,7 @@
     <div class="message-attachment-preview">
         {% if msg.is_image and msg.attachment_file %}
             <div class="attachment-image-frame" title="Click to zoom">
-                <img src="{{ msg.attachment_file.url }}"
+                <img src="{% url 'message_attachment' msg.pk %}"
                      alt="{{ msg.attachment_name }}"
                      loading="lazy"
                      onclick="openLightbox(this.src, this.alt)">
@@ -19,7 +19,7 @@
         {% elif msg.is_video and msg.attachment_file %}
             <div class="attachment-video-frame">
                 <video controls preload="metadata">
-                    <source src="{{ msg.attachment_file.url }}">
+                    <source src="{% url 'message_attachment' msg.pk %}">
                 </video>
             </div>
         {% elif msg.attachment_file %}
@@ -27,7 +27,7 @@
                 <span class="file-icon">{{ msg.file_extension|upper }}</span>
                 <div class="file-info">
                     <span class="file-name">{{ msg.attachment_name }}</span>
-                    <a href="{{ msg.attachment_file.url }}"
+                    <a href="{% url 'message_attachment' msg.pk %}?download=1"
                        class="file-download" target="_blank" rel="noopener">
                         Download ↓
                     </a>
@@ -43,7 +43,7 @@
         {% endif %}
         {% if msg.attachment_file %}
         <div class="attachment-footer">
-            <a href="{{ msg.attachment_file.url }}"
+            <a href="{% url 'message_attachment' msg.pk %}"
                class="attachment-link"
                target="_blank"
                rel="noopener"

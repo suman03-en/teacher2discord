@@ -6,10 +6,12 @@ logic to ``services`` and uses helpers from ``utils``.
 """
 
 import logging
+import mimetypes
+import os
 
 from django.contrib import messages
 from django.db.models import Count
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -29,7 +31,7 @@ from .forms import (
     StudentConnectForm,
     StudentLinkForm,
 )
-from .models import LoginToken, StudentLink
+from .models import LoginToken, SentMessage, StudentLink
 from .services import (
     check_webhook_duplicate,
     connect_student_webhook,
@@ -328,6 +330,42 @@ def link_messages(request, link_id):
             "link": link,
         },
     )
+
+
+@teacher_required
+def message_attachment(request, message_id):
+    """Serve or download a message attachment securely under the application's domain.
+
+    Only the teacher who owns the channel's folder can access the file.
+    Streams the content with appropriate MIME type and Content-Disposition.
+    """
+    msg = get_object_or_404(
+        SentMessage.objects.select_related("channel__student_link__folder"),
+        pk=message_id,
+        channel__student_link__folder__teacher=request.teacher,
+    )
+    if not msg.attachment_file:
+        raise Http404("Attachment not found.")
+
+    is_download = request.GET.get("download") == "1"
+    filename = msg.attachment_name or os.path.basename(msg.attachment_file.name)
+    content_type, _ = mimetypes.guess_type(filename)
+    content_type = content_type or "application/octet-stream"
+
+    try:
+        file_obj = msg.attachment_file.open("rb")
+    except Exception:
+        logger.exception("Failed to open attachment for message %s", message_id)
+        raise Http404("Attachment could not be retrieved.")
+
+    response = FileResponse(
+        file_obj,
+        content_type=content_type,
+        as_attachment=is_download,
+        filename=filename,
+    )
+    response["Cache-Control"] = "private, max-age=3600"
+    return response
 
 
 # ---------------------------------------------------------------------------

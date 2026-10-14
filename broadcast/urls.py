@@ -13,6 +13,7 @@ urlpatterns = [
     path("folders/<int:folder_id>/", views.folder_detail, name="folder_detail"),
     path("links/<int:link_id>/messages/", views.link_messages, name="link_messages"),
     path("links/<int:link_id>/<str:slug>/", views.link_detail, name="link_detail"),
+    path("messages/<int:message_id>/attachment/", views.message_attachment, name="message_attachment"),
     # Student
     path("student/<uuid:token>/", views.student_connect, name="student_connect"),
 ]

@@ -924,3 +924,26 @@ input[type="file"]::file-selector-button:hover {
     .attachment-video-frame { max-width: 100%; }
     .file-name { max-width: 160px; }
 }
+
+/* ==========================================================================
+   Navigation & Logo Utilities
+   ========================================================================== */
+.nav-logo {
+    height: 28px;
+    width: auto;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+}
+
+.login-header-logo {
+    height: 32px;
+    width: auto;
+    vertical-align: middle;
+    margin-right: 0.2rem;
+    margin-top: -6px;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
