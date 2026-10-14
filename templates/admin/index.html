@@ -6,6 +6,13 @@
 <link rel="stylesheet" href="{% static 'broadcast/css/admin_dashboard.css' %}">
 {% endblock %}
 
+{% block responsive %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'broadcast/css/admin_dashboard.css' %}">
+{% endblock %}
+
+{% block content_title %}{% if is_models_view %}{{ block.super }}{% endif %}{% endblock %}
+
 {% block coltype %}{% if is_models_view %}colMS{% else %}colM{% endif %}{% endblock %}
 
 {% block sidebar %}{% if is_models_view %}{{ block.super }}{% endif %}{% endblock %}
@@ -49,6 +56,9 @@
         <div class="analytics-actions">
             <a href="?refresh=1" class="analytics-refresh-btn" title="Fetch latest live quotas from Brevo and Cloudinary">
                 ↻ Refresh Live Quotas
+            </a>
+            <a href="{% url 'admin:models-index' %}" class="analytics-models-btn" title="Open Django Models &amp; Authentication">
+                📁 Django Models
             </a>
         </div>
     </div>
