@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "cloudinary_storage",
+    "cloudinary",
     "anymail",
     "broadcast",
 ]
@@ -109,6 +111,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -117,6 +122,36 @@ STORAGES = {
 # Media files (User uploaded files)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# ---------------------------------------------------------------------------
+# Cloudinary — media storage for attachments
+# Configure via CLOUDINARY_URL (e.g. cloudinary://api_key:api_secret@cloud_name)
+# or individual credentials (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET).
+# When either is provided, AdaptiveCloudinaryStorage is used for media files.
+# ---------------------------------------------------------------------------
+CLOUDINARY_URL = os.environ.get("CLOUDINARY_URL", "").strip()
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "").strip()
+CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY", "").strip()
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "").strip()
+
+CLOUDINARY_STORAGE = {
+    "SECURE": True,
+}
+
+if CLOUDINARY_URL:
+    os.environ["CLOUDINARY_URL"] = CLOUDINARY_URL
+    STORAGES["default"] = {
+        "BACKEND": "broadcast.storage.AdaptiveCloudinaryStorage",
+    }
+elif CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    CLOUDINARY_STORAGE.update({
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+    })
+    STORAGES["default"] = {
+        "BACKEND": "broadcast.storage.AdaptiveCloudinaryStorage",
+    }
 
 # Email configuration using Brevo API (via django-anymail)
 EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
@@ -135,17 +170,29 @@ LOGIN_TOKEN_EXPIRY_MINUTES = 15
 FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_ENCRYPTION_KEY", "")
 
 # ---------------------------------------------------------------------------
-# Cache — shared across all gunicorn workers so rate-limit counters are
-# global. (The default LocMemCache is per-process, which would multiply
-# every limit by the number of workers.) Create the table once with:
-#   python manage.py createcachetable
+# Cache — In development (DEBUG=True), LocMemCache provides instant in-memory
+# operations with zero SQL queries and zero WAN latency.
+# In production, DatabaseCache is shared across gunicorn workers, with
+# CULL_FREQUENCY=0 to eliminate costly SELECT COUNT(*) queries on every set.
 # ---------------------------------------------------------------------------
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "django_cache",
+if DEBUG:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "default-locmem",
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "django_cache",
+            "OPTIONS": {
+                "MAX_ENTRIES": 10000,
+                "CULL_FREQUENCY": 0,
+            },
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Magic-link rate limiting (protects inboxes AND the Brevo plan quota)

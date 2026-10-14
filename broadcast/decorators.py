@@ -88,15 +88,17 @@ def _check_rules(request, rules):
     if not cache_keys:
         return None
 
-    # 2. Check limits and increment
-    # We use the cache framework which is much faster than row-level DB locks.
-    for key, limit, period, prefix in cache_keys:
-        count = cache.get(key, 0)
+    # 2. Check limits in a single batch read
+    key_map = {k: (limit, period, prefix) for k, limit, period, prefix in cache_keys}
+    cached_values = cache.get_many(list(key_map.keys()))
+
+    for key, (limit, period, prefix) in key_map.items():
+        count = cached_values.get(key, 0)
         if count >= limit:
             return prefix
 
-    # If all clear, apply increments
-    for key, limit, period, prefix in cache_keys:
+    # 3. If all clear, apply increments
+    for key, (limit, period, prefix) in key_map.items():
         try:
             cache.incr(key)
         except ValueError:

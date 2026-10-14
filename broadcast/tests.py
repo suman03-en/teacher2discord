@@ -24,7 +24,7 @@ from .models import (
     Channel,
     Folder,
     LoginToken,
-    RateLimit,
+    SentMessage,
     StudentLink,
     Teacher,
 )
@@ -407,6 +407,8 @@ class RateLimitTests(TestCase):
         self.assertEqual(result, "test_block")
 
     def test_check_rules_resets_after_expiry(self):
+        from django.core.cache import cache
+
         request = self.factory.post("/")
         request.META["REMOTE_ADDR"] = "127.0.0.1"
 
@@ -414,10 +416,8 @@ class RateLimitTests(TestCase):
         for _ in range(3):
             _check_rules(request, [("test_reset", 3, 1, ip_key)])
 
-        # Manually expire the counter
-        RateLimit.objects.filter(key__startswith="rl_test_reset").update(
-            reset_at=timezone.now() - timedelta(seconds=1)
-        )
+        # Clear the expired counter
+        cache.clear()
 
         # Should be allowed again
         result = _check_rules(request, [("test_reset", 3, 1, ip_key)])
@@ -547,3 +547,166 @@ class CSPMiddlewareTests(TestCase):
         csp = response["Content-Security-Policy"]
         self.assertIn("default-src 'self'", csp)
         self.assertIn("frame-ancestors 'none'", csp)
+
+    def test_csp_allows_cloudinary(self):
+        response = self.client.get("/")
+        csp = response["Content-Security-Policy"]
+        self.assertIn("img-src 'self' data: https://res.cloudinary.com", csp)
+        self.assertIn("media-src 'self' https://res.cloudinary.com", csp)
+
+
+# ---------------------------------------------------------------------------
+# Attachment preview & Cloudinary storage tests
+# ---------------------------------------------------------------------------
+
+
+class AttachmentModelTests(TestCase):
+    def setUp(self):
+        self.teacher = Teacher.objects.create(email="t@example.com")
+        self.folder = Folder.objects.create(teacher=self.teacher, name="Math")
+        self.student_link = StudentLink.objects.create(
+            folder=self.folder,
+            channel_name="General",
+        )
+        self.channel = Channel.objects.create(
+            student_link=self.student_link,
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+        )
+
+    def test_sent_message_is_image(self):
+        msg_png = SentMessage(channel=self.channel, attachment_name="photo.png")
+        msg_jpg = SentMessage(channel=self.channel, attachment_name="photo.JPG")
+        msg_webp = SentMessage(channel=self.channel, attachment_name="art.webp")
+        msg_pdf = SentMessage(channel=self.channel, attachment_name="doc.pdf")
+        msg_empty = SentMessage(channel=self.channel, attachment_name="")
+
+        self.assertTrue(msg_png.is_image)
+        self.assertTrue(msg_jpg.is_image)
+        self.assertTrue(msg_webp.is_image)
+        self.assertFalse(msg_pdf.is_image)
+        self.assertFalse(msg_empty.is_image)
+
+    def test_sent_message_is_video(self):
+        msg_mp4 = SentMessage(channel=self.channel, attachment_name="clip.mp4")
+        msg_webm = SentMessage(channel=self.channel, attachment_name="demo.WEBM")
+        msg_png = SentMessage(channel=self.channel, attachment_name="photo.png")
+
+        self.assertTrue(msg_mp4.is_video)
+        self.assertTrue(msg_webm.is_video)
+        self.assertFalse(msg_png.is_video)
+
+    def test_sent_message_file_extension(self):
+        msg = SentMessage(channel=self.channel, attachment_name="homework.Final.PDF")
+        self.assertEqual(msg.file_extension, "pdf")
+
+        msg_no_ext = SentMessage(channel=self.channel, attachment_name="noextension")
+        self.assertEqual(msg_no_ext.file_extension, "")
+
+    def test_adaptive_storage_resource_types(self):
+        from broadcast.storage import AdaptiveCloudinaryStorage
+
+        storage = AdaptiveCloudinaryStorage()
+        self.assertEqual(storage._get_resource_type("photo.png"), "image")
+        self.assertEqual(storage._get_resource_type("diagram.jpeg"), "image")
+        self.assertEqual(storage._get_resource_type("clip.mp4"), "video")
+        self.assertEqual(storage._get_resource_type("recording.webm"), "video")
+        self.assertEqual(storage._get_resource_type("assignment.pdf"), "raw")
+        self.assertEqual(storage._get_resource_type("archive.zip"), "raw")
+        self.assertEqual(storage._get_resource_type("notes.docx"), "raw")
+        # Extensionless Cloudinary public_id or multi-dot filename with format stripped
+        self.assertEqual(
+            storage._get_resource_type("media/attachments/2026/10/Screenshot_www.roblox.com_lzbiog"),
+            "image",
+        )
+        self.assertEqual(storage._get_resource_type("media/attachments/noext"), "image")
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class AttachmentTemplateTests(TestCase):
+    def setUp(self):
+        self.teacher = Teacher.objects.create(email="t2@example.com")
+        self.folder = Folder.objects.create(teacher=self.teacher, name="History")
+        self.student_link = StudentLink.objects.create(
+            folder=self.folder,
+            channel_name="Class 101",
+        )
+        self.channel = Channel.objects.create(
+            student_link=self.student_link,
+            webhook_url="https://discord.com/api/webhooks/456/def",
+        )
+
+    def test_render_image_preview(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.template.loader import render_to_string
+
+        msg = SentMessage.objects.create(
+            channel=self.channel,
+            content="Look at this picture",
+            attachment_name="graph.png",
+            attachment_file=SimpleUploadedFile("graph.png", b"fake-png", content_type="image/png"),
+        )
+        html = render_to_string(
+            "broadcast/_message_items.html",
+            {"page_obj": [msg], "link": self.student_link},
+        )
+        self.assertIn("attachment-image-frame", html)
+        self.assertIn("openLightbox(this.src, this.alt)", html)
+        self.assertIn("graph.png", html)
+
+    def test_render_video_preview(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.template.loader import render_to_string
+
+        msg = SentMessage.objects.create(
+            channel=self.channel,
+            content="Class recording",
+            attachment_name="lesson.mp4",
+            attachment_file=SimpleUploadedFile("lesson.mp4", b"fake-mp4", content_type="video/mp4"),
+        )
+        html = render_to_string(
+            "broadcast/_message_items.html",
+            {"page_obj": [msg], "link": self.student_link},
+        )
+        self.assertIn("attachment-video-frame", html)
+        self.assertIn("<video controls", html)
+
+    def test_render_raw_file_card(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.template.loader import render_to_string
+
+        msg = SentMessage.objects.create(
+            channel=self.channel,
+            content="Assignment doc",
+            attachment_name="hw1.pdf",
+            attachment_file=SimpleUploadedFile("hw1.pdf", b"%PDF-1.4", content_type="application/pdf"),
+        )
+        html = render_to_string(
+            "broadcast/_message_items.html",
+            {"page_obj": [msg], "link": self.student_link},
+        )
+        self.assertIn("attachment-file-card", html)
+        self.assertIn("file-download", html)
+        self.assertIn("PDF", html)
+
+    def test_render_legacy_message(self):
+        from django.template.loader import render_to_string
+
+        msg = SentMessage.objects.create(
+            channel=self.channel,
+            content="Legacy announcement",
+            attachment_name="old_note.txt",
+        )
+        html = render_to_string(
+            "broadcast/_message_items.html",
+            {"page_obj": [msg], "link": self.student_link},
+        )
+        self.assertIn("attachment-file-card", html)
+        self.assertNotIn("file-download", html)
+        self.assertIn("old_note.txt", html)
+
+

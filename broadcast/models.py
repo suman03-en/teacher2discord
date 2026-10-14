@@ -110,6 +110,9 @@ class SentMessage(models.Model):
     )
     content = models.TextField(blank=True)
     attachment_name = models.CharField(max_length=255, blank=True)
+    attachment_file = models.FileField(
+        upload_to="attachments/%Y/%m/", blank=True, default=""
+    )
     sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -117,6 +120,30 @@ class SentMessage(models.Model):
         indexes = [  # noqa: RUF012
             models.Index(fields=["channel", "-sent_at"]),
         ]
+
+    @property
+    def is_image(self):
+        """Return True if the attachment is a previewable image."""
+        if not self.attachment_name:
+            return False
+        ext = self.attachment_name.rsplit(".", 1)[-1].lower()
+        return ext in ("png", "jpg", "jpeg", "gif", "webp")
+
+    @property
+    def is_video(self):
+        """Return True if the attachment is a previewable video."""
+        if not self.attachment_name:
+            return False
+        ext = self.attachment_name.rsplit(".", 1)[-1].lower()
+        return ext in ("mp4", "webm")
+
+    @property
+    def file_extension(self):
+        """Return the lowercase file extension (without dot)."""
+        if not self.attachment_name:
+            return ""
+        parts = self.attachment_name.rsplit(".", 1)
+        return parts[-1].lower() if len(parts) > 1 else ""
 
     def __str__(self):
         return f"To {self.channel}: {self.content[:20]}"

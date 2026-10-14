@@ -3,10 +3,12 @@ anyio==4.15.1
 asgiref==3.12.1
 certifi==2026.7.22
 charset-normalizer==3.5.1
+cloudinary==1.46.3
 cryptography>=44.0.0
 dj-database-url==3.1.2
 django==6.1.1
 django-anymail==15.2
+django-cloudinary-storage==0.3.0
 gunicorn==26.2.0
 h11==0.16.0
 httpcore==1.0.9
@@ -17,6 +19,7 @@ pydantic==2.13.5
 pydantic-core==2.46.5
 python-dotenv==1.2.3
 requests==2.34.2
+six==1.17.0
 sqlparse==0.6.0
 typing-extensions==4.16.0
 typing-inspection==0.4.4

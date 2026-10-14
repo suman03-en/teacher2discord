@@ -8,7 +8,53 @@
     <div class="message-body">{{ msg.content }}</div>
     {% endif %}
     {% if msg.attachment_name %}
-    <div class="message-attachment">📎 {{ msg.attachment_name }}</div>
+    <div class="message-attachment-preview">
+        {% if msg.is_image and msg.attachment_file %}
+            <div class="attachment-image-frame" title="Click to zoom">
+                <img src="{{ msg.attachment_file.url }}"
+                     alt="{{ msg.attachment_name }}"
+                     loading="lazy"
+                     onclick="openLightbox(this.src, this.alt)">
+            </div>
+        {% elif msg.is_video and msg.attachment_file %}
+            <div class="attachment-video-frame">
+                <video controls preload="metadata">
+                    <source src="{{ msg.attachment_file.url }}">
+                </video>
+            </div>
+        {% elif msg.attachment_file %}
+            <div class="attachment-file-card">
+                <span class="file-icon">{{ msg.file_extension|upper }}</span>
+                <div class="file-info">
+                    <span class="file-name">{{ msg.attachment_name }}</span>
+                    <a href="{{ msg.attachment_file.url }}"
+                       class="file-download" target="_blank" rel="noopener">
+                        Download ↓
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="attachment-file-card">
+                <span class="file-icon">{{ msg.file_extension|upper|default:"FILE" }}</span>
+                <div class="file-info">
+                    <span class="file-name">{{ msg.attachment_name }}</span>
+                </div>
+            </div>
+        {% endif %}
+        {% if msg.attachment_file %}
+        <div class="attachment-footer">
+            <a href="{{ msg.attachment_file.url }}"
+               class="attachment-link"
+               target="_blank"
+               rel="noopener"
+               title="Open {{ msg.attachment_name }} in new tab">
+                📎 {{ msg.attachment_name }} <span class="attachment-open-icon">↗</span>
+            </a>
+        </div>
+        {% else %}
+        <div class="attachment-label">📎 {{ msg.attachment_name }}</div>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 {% endfor %}

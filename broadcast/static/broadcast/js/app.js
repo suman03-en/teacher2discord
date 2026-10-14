@@ -160,3 +160,43 @@ function loadMoreMessages(btn) {
             btn.innerHTML = 'Load Older Messages';
         });
 }
+
+
+/* --------------------------------------------------------------------------
+   Image lightbox for attachment previews
+   -------------------------------------------------------------------------- */
+function openLightbox(src, alt) {
+    const overlay = document.createElement('div');
+    overlay.className = 'lightbox-overlay';
+    overlay.innerHTML = `
+        <button class="lightbox-close" aria-label="Close">&times;</button>
+        <div class="lightbox-content">
+            <img src="${src}" alt="${alt}">
+            <div class="lightbox-caption">
+                <span>${alt}</span>
+                <a href="${src}" target="_blank" rel="noopener" class="lightbox-open-link" onclick="event.stopPropagation()">Open in new tab ↗</a>
+            </div>
+        </div>
+    `;
+    overlay.addEventListener('click', (e) => {
+        // Close on overlay or close button click, but not on content
+        if (e.target === overlay || e.target.closest('.lightbox-close')) {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 200);
+        }
+    });
+    document.body.appendChild(overlay);
+    // Trigger reflow for transition
+    requestAnimationFrame(() => overlay.classList.add('active'));
+
+    // Close on Escape
+    const onEsc = (e) => {
+        if (e.key === 'Escape') {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 200);
+            document.removeEventListener('keydown', onEsc);
+        }
+    };
+    document.addEventListener('keydown', onEsc);
+}
+

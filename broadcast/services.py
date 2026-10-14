@@ -17,7 +17,7 @@ from anymail.exceptions import (
 )
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import DatabaseError, transaction
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -226,14 +226,18 @@ def send_discord_message(
         raise DiscordDeliveryError()
 
     try:
-        SentMessage.objects.create(
+        msg = SentMessage(
             channel=channel,
             content=payload.get("content", ""),
             attachment_name=uploaded_file.name if uploaded_file else "",
         )
-    except DatabaseError:
-        # Message was delivered but history persistence failed — log and
-        # continue so the user sees a success (the message *was* sent).
+        if uploaded_file:
+            uploaded_file.seek(0)  # rewind after Discord upload consumed it
+            msg.attachment_file.save(uploaded_file.name, uploaded_file, save=False)
+        msg.save()
+    except Exception:
+        # Message was delivered to Discord but history/storage persistence failed —
+        # log and continue so the user sees a success (the message *was* sent).
         logger.exception(
             "SentMessage persistence failed for channel %s after successful delivery",
             channel.pk,
